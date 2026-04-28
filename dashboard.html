@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Nouvelair ESG</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="sidebar.css" rel="stylesheet">
+    <style>
+        html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100vh; /* Fixe la hauteur à 100% de la vue */
+    overflow: hidden; /* Empêche le scroll sur le body lui-même */
+    background-color: #f8f9fa;
+}
+
+body {
+    display: flex;
+    font-family: 'Inter', sans-serif;
+}
+
+.main-content {
+    flex: 1; /* Prend toute la place restante à côté de la sidebar */
+    height: 100vh;
+    display: flex;
+    flex-direction: column; /* Aligne header, puis container, puis chart verticalement */
+    padding: 20px;
+    overflow-y: auto; /* Autorise le scroll uniquement à l'intérieur du contenu si nécessaire */
+}
+
+/* Ajustement du header pour qu'il ne prenne que l'espace nécessaire */
+.dashboard-header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px; /* Réduit pour gagner de la place */
+    padding: 0 10px;
+}
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding: 0 20px;
+        }
+
+        .header-left h1 {
+            color: #1a2b4a;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header-left p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .year-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .year-selector label {
+            color: #1a2b4a;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .year-selector select {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            background-color: white;
+            color: #1a2b4a;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .year-selector select:focus {
+            outline: none;
+            border-color: #2ecc71;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background-color: #dc2626;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .logout-btn:hover {
+            background-color: #991b1b;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px;
+            
+            
+        }
+
+        .score-card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .score-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .score-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a2b4a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .circular-gauge {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin-bottom: 20px;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: #e5e7eb;
+            stroke-width: 8;
+        }
+
+        .gauge-progress {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s ease;
+        }
+
+        .score-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-weight: 700;
+            color: #1a2b4a;
+        }
+
+        .score-value {
+            font-size: 32px;
+            display: block;
+        }
+
+        .score-total {
+            font-size: 14px;
+            color: #6b7280;
+            display: block;
+        }
+
+        .score-description {
+            font-size: 17px;
+            color: #9ca3af;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+        /* Color variations for each pillar */
+        .card-global .gauge-progress {
+            stroke: #1e3a5f;
+        }
+
+        .card-environnement .gauge-progress {
+            stroke: #2ecc71;
+        }
+
+        .card-social .gauge-progress {
+            stroke: #3b82f6;
+        }
+
+        .card-gouvernance .gauge-progress {
+            stroke: #f97316;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            color: #6b7280;
+            font-size: 16px;
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            color: #dc2626;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+
+            .header-left h1 {
+                font-size: 24px;
+            }
+
+            .dashboard-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .circular-gauge {
+                width: 140px;
+                height: 140px;
+            }
+
+            .score-value {
+                font-size: 24px;
+            }
+            .evolution-container {
+    max-width: 1400px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.chart-card {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.chart-title {
+    color: #1a2b4a;
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 25px;
+}
+
+.chart-wrapper {
+    height: 400px; /* Hauteur de la courbe */
+    width: 100%;
+    position: relative;
+}
+        }
+    </style>
+</head>
+<body>
+    <main id="mainContent" class="main-content">
+    <div class="dashboard-header">
+        <div class="header-left">
+            <h1>Tableau de Bord ESG</h1>
+            <p>Plateforme de Pilotage ESG - Nouvelair</p>
+        </div>
+        <div class="header-right">
+            <div class="year-selector">
+                <label for="yearSelect">  Année:   </label>
+                <select id="yearSelect">
+                    <option value="2023">2020</option>
+                    <option value="2023">2021</option>
+                    <option value="2023">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container" id="dashboardContainer">
+    <div class="loading">Chargement des données...</div>
+</div>
+
+<div class="evolution-container">
+    <div class="chart-card">
+        <h3 class="chart-title">Évolution Score ESG — 12 mois</h3>
+        <div class="chart-wrapper">
+            <canvas id="evolutionChart"></canvas>
+        </div>
+    </div>
+</div>
+    </main>
+
+    <script src="sidebar.js"></script>
+    <script src="fetch.js"></script>
+    <script>
+        const dashboardContainer = document.getElementById('dashboardContainer');
+        const yearSelect = document.getElementById('yearSelect');
+
+        const PILLAR_CONFIG = {
+            global: {
+                title: 'Score Global',
+                class: 'card-global',
+                description: 'Score ESG global',
+            },
+            environnement: {
+                title: 'Environnement',
+                class: 'card-environnement',
+                description: 'Pilier Environnemental',
+            },
+            social: {
+                title: 'Social',
+                class: 'card-social',
+                description: 'Pilier Social',
+            },
+            gouvernance: {
+                title: 'Gouvernance',
+                class: 'card-gouvernance',
+                description: 'Pilier de Gouvernance',
+            },
+        };
+
+        function createCircularGauge(pillarKey, score, maxScore = 100) {
+            const circumference = 2 * Math.PI * 82; // radius = 82
+            const offset = circumference - (score / maxScore) * circumference;
+
+            const config = PILLAR_CONFIG[pillarKey];
+
+            return `
+                <div class="score-card ${config.class}">
+                    <div class="score-title">${config.title}</div>
+                    <div class="circular-gauge">
+                        <svg viewBox="0 0 200 200">
+                            <circle cx="100" cy="100" r="82" class="gauge-bg"></circle>
+                            <circle 
+                                cx="100" 
+                                cy="100" 
+                                r="82" 
+                                class="gauge-progress"
+                                style="stroke-dasharray: ${circumference}; stroke-dashoffset: ${offset};"
+                            ></circle>
+                        </svg>
+                        <div class="score-text">
+                            <span class="score-value">${Math.round(score)}</span>
+                            <span class="score-total">/ ${maxScore}</span>
+                        </div>
+                    </div>
+                    <div class="score-description">${config.description}</div>
+                </div>
+            `;
+        }
+
+        function renderDashboard(data) {
+            let html = '';
+
+            // Global score
+           if (data.global && data.global.score_global !== undefined) {
+        html += createCircularGauge('global', data.global.score_global, 100);
+    }
+
+            // Environnement score
+            if (data.environnement && data.environnement.score !== undefined) {
+                html += createCircularGauge('environnement', data.environnement.score, 100);
+            }
+
+            // Social score
+            if (data.social && data.social.score !== undefined) {
+                html += createCircularGauge('social', data.social.score, 100);
+            }
+
+            // Gouvernance score
+            if (data.gouvernance && data.gouvernance.score !== undefined) {
+                html += createCircularGauge('gouvernance', data.gouvernance.score, 100);
+            }
+
+            // If no data available
+            if (!html) {
+                html = `
+                    <div class="error-message">
+                        Aucune donnée disponible pour cette année
+                    </div>
+                `;
+            }
+
+            dashboardContainer.innerHTML = html;
+        }
+
+        function renderError(message) {
+            dashboardContainer.innerHTML = `
+                <div class="error-message">
+                    ${message || 'Erreur lors du chargement du tableau de bord'}
+                </div>
+            `;
+        }
+
+       // Dans dashboard.html
+    async function loadDashboard(year = 2025) {
+    const result = await loadDashboardData(year);
+
+    if (result.success && result.data) {
+        // 1. Afficher les jauges
+        renderDashboard(result.data); 
+        
+        // 2. Afficher la courbe (Vérifiez cet appel !)
+        if (result.data.evolution) {
+            renderEvolutionChart(result.data.evolution);
+        } else {
+            console.warn("Données d'évolution manquantes dans la réponse API");
+        }
+    }
+}
+
+        // Event listeners
+        yearSelect.addEventListener('change', (e) => {
+            loadDashboard(parseInt(e.target.value));
+        });
+
+        
+
+        // Initial load
+        loadDashboard(2025);
+    </script>
+</body>
+</html>
