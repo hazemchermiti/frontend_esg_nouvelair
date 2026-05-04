@@ -176,6 +176,15 @@ const SIDEBAR_CSS = `
     padding: 24px 32px;
 }
 
+body{
+    opacity:1;
+    transition: opacity .2s ease;
+}
+
+body.page-leave{
+    opacity:.15;
+}
+
 /* Small screens */
 @media (max-width:900px){
     .sidebar{width:72px;padding:12px}
@@ -183,6 +192,29 @@ const SIDEBAR_CSS = `
     .sidebar-header h2{display:none}
 }
 `;
+
+const PAGE_ROUTES = {
+    dashboard: 'dashboard.html',
+    environnement: 'environnement.html',
+    social: 'social.html',
+    gouvernance: 'gouvernance.html',
+    anomalies: 'anomalies.html',
+    recommandations: 'recommandations.html',
+    rapports: 'rapports.html',
+    parametres: 'parametres.html',
+};
+
+function navigateWithTransition(targetPage) {
+    if (!targetPage) return;
+
+    const current = window.location.pathname.split('/').pop() || 'dashboard.html';
+    if (current === targetPage) return;
+
+    document.body.classList.add('page-leave');
+    window.setTimeout(() => {
+        window.location.href = targetPage;
+    }, 180);
+}
 
 function initSidebar() {
     // Check if user is logged in
@@ -245,16 +277,15 @@ function setupSidebarEvents() {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             const page = item.getAttribute('data-page');
+            const targetPage = PAGE_ROUTES[page];
             
             // Remove active class from all items
             navItems.forEach(nav => nav.classList.remove('active'));
             
             // Add active class to clicked item
             item.classList.add('active');
-            
-            // Here you would load the page content
-            // For now, this is a placeholder for routing logic
-            console.log('Navigate to:', page);
+
+            navigateWithTransition(targetPage);
         });
     });
 

@@ -181,3 +181,92 @@ function renderEvolutionChart(evoData) {
         }
     });
 }
+
+// Anomalies API helpers
+async function getAnomalies(status = 'NEW') {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/anomalies/?status=${encodeURIComponent(status)}`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getAnomalies error:', error);
+        throw error;
+    }
+}
+
+// Trigger detection for a KPI (POST /api/anomalies/detect/{kpi_code}?year=...)
+async function detectAnomalies(kpiCode, year = null) {
+    try {
+        const normalizedKpi = String(kpiCode || '').trim().toUpperCase();
+        if (!normalizedKpi) {
+            throw new Error('Code KPI manquant');
+        }
+
+        const baseUrl = new URL(`${API_BASE_URL}/api/anomalies/detect/${encodeURIComponent(normalizedKpi)}`);
+        if (year !== null && year !== undefined && String(year).trim() !== '') {
+            const parsedYear = Number.parseInt(String(year), 10);
+            if (Number.isNaN(parsedYear)) {
+                throw new Error('Année invalide');
+            }
+            baseUrl.searchParams.set('year', String(parsedYear));
+        }
+
+        // Keep request "simple" (no JSON body/headers) to reduce CORS preflight issues.
+        let res = await fetch(baseUrl.toString(), { method: 'POST', mode: 'cors', headers: { 'Accept': 'application/json' } });
+
+        // Some deployments differ on trailing slash behavior; retry once if route mismatch.
+        if (res.status === 404 || res.status === 405) {
+            const altUrl = new URL(`${API_BASE_URL}/api/anomalies/detect/${encodeURIComponent(normalizedKpi)}/`);
+            if (baseUrl.search) {
+                altUrl.search = baseUrl.search;
+            }
+            res = await fetch(altUrl.toString(), { method: 'POST', mode: 'cors', headers: { 'Accept': 'application/json' } });
+
+        }
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            const detail = Array.isArray(err?.detail)
+                ? err.detail.map((d) => d.msg || JSON.stringify(d)).join(', ')
+                : err?.detail;
+            throw new Error(detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('detectAnomalies error:', error);
+        throw error;
+    }
+}
+
+// Resolve an anomaly (PATCH /api/anomalies/{anomaly_id}/resolve)
+async function resolveAnomaly(anomalyId) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/anomalies/${encodeURIComponent(anomalyId)}/resolve`, {
+            method: 'PATCH',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'RESOLU' })
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('resolveAnomaly error:', error);
+        throw error;
+    }
+}
+
+// Expose to global scope for pages that include fetch.js
+window.getAnomalies = getAnomalies;
+window.detectAnomalies = detectAnomalies;
+window.resolveAnomaly = resolveAnomaly;

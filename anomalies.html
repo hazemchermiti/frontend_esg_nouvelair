@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anomalies - ESG Nouvelair</title>
+  <link href="sidebar.css" rel="stylesheet">
+  <style>
+    :root{--bg:#f6f8fb;--card:#fff;--muted:#9aa6b2;--accent:#1e3a5f;--green:#34d399;--orange:#f59e0b;--red:#ef4444;--pink:#ffdede}
+    body{font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);margin:0;padding:32px;color:#0f172a}
+    .container{max-width:1100px;margin:0 auto}
+    .card{background:var(--card);border-radius:12px;box-shadow:0 4px 20px rgba(16,24,40,0.06);padding:28px}
+    h1{font-size:20px;margin:0 0 16px;color:#0b1220}
+    .controls{display:flex;gap:12px;align-items:center;margin-bottom:16px}
+    .controls input, .controls select{padding:8px 10px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
+    .btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
+    .btn.secondary{background:#e6eef6;color:var(--accent)}
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    thead th{text-align:left;padding:14px 8px;color:var(--muted);font-weight:600;font-size:13px;border-bottom:1px solid #eef2f6}
+    tbody td{padding:16px 8px;border-bottom:1px solid #f3f6f8;vertical-align:middle}
+    .kpi-name{color:#0b1220;font-weight:600}
+    .value{font-weight:700;color:#0b1220}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;font-size:12px;color:#fff}
+    .sev-critical{background:var(--red)}
+    .sev-warning{background:var(--orange)}
+    .sev-info{background:#3b82f6}
+    .status-new{background:#ffdede;color:#7a1f1f}
+    .status-inprogress{background:#ffe7d6;color:#7a4100}
+    .status-resolu{background:var(--green);color:#064e3b}
+    .right{ text-align:right }
+    .muted{color:var(--muted)}
+    .small{font-size:13px}
+    .loader{width:18px;height:18px;border-radius:50%;border:3px solid #e6eef6;border-top-color:var(--accent);animation:spin 1s linear infinite;display:inline-block}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .empty{padding:28px;text-align:center;color:var(--muted)}
+  </style>
+</head>
+<body>
+  <main class="main-content">
+  <div class="container">
+    <div class="card">
+      <h1>Anomalies Détectées <span id="count" class="muted small"></span></h1>
+
+      <div class="controls">
+        <label class="small muted">Statut:</label>
+        <select id="statusSelect">
+          <option value="NEW">Nouvelle</option>
+          <option value="RESOLU">Résolue</option>
+        </select>
+
+        <button id="refreshBtn" class="btn secondary">Rafraîchir</button>
+
+        <div style="flex:1"></div>
+
+        <input id="kpiInput" placeholder="Code KPI (ex: CO2)" />
+        <input id="yearInput" placeholder="Année (ex: 2025)" style="width:110px" />
+        <button id="detectBtn" class="btn">Détecter</button>
+      </div>
+
+      <div id="tableWrap">
+        <table id="anomaliesTable">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>KPI</th>
+              <th class="right">Valeur</th>
+              <th class="right">Seuil</th>
+              <th class="right">Z-score</th>
+              <th>Sévérité</th>
+              <th>Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="anomaliesBody">
+          </tbody>
+        </table>
+      </div>
+      <div id="emptyMsg" class="empty" style="display:none">Aucune anomalie trouvée.</div>
+    </div>
+  </div>
+  </main>
+
+  <script src="sidebar.js"></script>
+  <script src="fetch.js"></script>
+  <script>
+    // Helper to map severity/status to classes/text
+    function sevClass(sev){
+      if(!sev) return 'sev-info';
+      const s = String(sev).toLowerCase();
+      if(s.includes('crit')) return 'sev-critical';
+      if(s.includes('warn') || s.includes('warning')) return 'sev-warning';
+      return 'sev-info';
+    }
+
+    function statusLabel(status){
+      if(!status) return ['','status-new'];
+      const s = String(status).toLowerCase();
+      if(s.includes('new')) return ['Nouvelle','status-new'];
+      if(s.includes('resol')) return ['Résolue','status-resolu'];
+      return ['Nouvelle', 'status-new'];
+    }
+
+    function formatDate(iso){
+      if(!iso) return '';
+      try{ const d = new Date(iso); return d.toLocaleDateString('fr-FR'); }catch(e){return iso}
+    }
+
+    function normalizeAnomaly(anomaly){
+      return {
+        id: anomaly?.id ?? null,
+        kpi_id: anomaly?.kpi_id ?? null,
+        kpi_code: anomaly?.kpi_code ?? anomaly?.kpi_id ?? '',
+        description: anomaly?.description ?? '',
+        detected_value: anomaly?.detected_value ?? '',
+        expected_value: anomaly?.expected_value ?? '',
+        z_score: anomaly?.z_score ?? '',
+        severity: String(anomaly?.severity ?? 'info').toLowerCase(),
+        status: String(anomaly?.status ?? 'NEW').toUpperCase(),
+        date_detected: anomaly?.date_detected ?? null,
+      };
+    }
+
+    function filterBySelectedStatus(anomalies){
+      const selectedStatus = String(document.getElementById('statusSelect').value || '').toUpperCase();
+      if (!selectedStatus) return anomalies;
+      return anomalies.filter(anomaly => String(anomaly.status || '').toUpperCase() === selectedStatus);
+    }
+
+    async function loadAndRender(){
+      const status = document.getElementById('statusSelect').value || '';
+      const body = document.getElementById('anomaliesBody');
+      const empty = document.getElementById('emptyMsg');
+      body.innerHTML = '<tr><td colspan="8" style="padding:20px"><span class="loader"></span> Chargement...</td></tr>';
+      empty.style.display = 'none';
+      try{
+        const anomalies = (await window.getAnomalies(status || null) || []).map(normalizeAnomaly);
+        document.getElementById('count').textContent = `(${anomalies.length})`;
+        if(!anomalies || anomalies.length===0){
+          body.innerHTML=''; empty.style.display='block'; return;
+        }
+        renderAnomaliesList(anomalies);
+      }catch(err){
+        console.error(err);
+        body.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444">Erreur lors du chargement des anomalies</td></tr>`;
+      }
+    }
+
+    // Render list of anomalies into the table (clears previous content)
+    function renderAnomaliesList(anomalies){
+      const body = document.getElementById('anomaliesBody');
+      const empty = document.getElementById('emptyMsg');
+      const safeAnomalies = (Array.isArray(anomalies) ? anomalies : []).map(normalizeAnomaly);
+      const filteredAnomalies = filterBySelectedStatus(safeAnomalies);
+
+      body.innerHTML = '';
+      empty.style.display = 'none';
+      document.getElementById('count').textContent = `(${filteredAnomalies.length})`;
+      if(!filteredAnomalies || filteredAnomalies.length === 0){
+        empty.style.display = 'block';
+        return;
+      }
+
+      // Build rows
+      const frag = document.createDocumentFragment();
+      filteredAnomalies.forEach(a => {
+        const [stText, stClass] = statusLabel(a.status);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${formatDate(a.date_detected)}</td>
+          <td><div class="kpi-name">${a.kpi_code || a.kpi_id || ''}</div><div class="small muted">${a.description || ''}</div></td>
+          <td class="right value">${a.detected_value ?? ''}</td>
+          <td class="right muted">${a.expected_value ?? ''}</td>
+          <td class="right muted">${a.z_score ?? ''}</td>
+          <td><span class="badge ${sevClass(a.severity)}">${a.severity || 'info'}</span></td>
+          <td><span class="badge ${stClass}">${stText}</span></td>
+          <td class="right"><button class="btn" data-action="resolve" data-id="${a.id}">Résoudre</button></td>
+        `;
+        frag.appendChild(tr);
+      });
+      body.appendChild(frag);
+    }
+
+    window.renderAnomaliesList = renderAnomaliesList;
+
+    // Event handlers
+    document.addEventListener('DOMContentLoaded', ()=>{
+      loadAndRender();
+
+      document.getElementById('refreshBtn').addEventListener('click', ()=>loadAndRender());
+
+      document.getElementById('detectBtn').addEventListener('click', async ()=>{
+        const kpi = document.getElementById('kpiInput').value.trim();
+        const year = document.getElementById('yearInput').value.trim();
+        if(!kpi){ alert('Entrez le code KPI (ex: CO2)'); return; }
+        const btn = document.getElementById('detectBtn');
+        const old = btn.textContent; btn.disabled = true; btn.textContent='Détection en cours...';
+        try{
+          const detectRes = await window.detectAnomalies(kpi, year || null);
+          console.log('detectAnomalies response:', detectRes);
+          const normalized = (Array.isArray(detectRes) ? detectRes : []).map(normalizeAnomaly);
+          console.log('normalized detect result:', normalized);
+          renderAnomaliesList(normalized);
+        }catch(e){ alert(`Erreur lors de la détection: ${e.message || e}`); console.error(e); }
+        btn.disabled=false; btn.textContent=old;
+      });
+
+      // Delegate resolve clicks
+      document.getElementById('anomaliesBody').addEventListener('click', async (ev)=>{
+        const btn = ev.target.closest('button[data-action]');
+        if(!btn) return;
+        const action = btn.dataset.action;
+        if(action === 'resolve'){
+          const id = btn.dataset.id;
+          if(!confirm('Marquer cette anomalie comme résolue ?')) return;
+          btn.disabled = true; const prev = btn.textContent; btn.textContent='...';
+          try{
+            const res = await window.resolveAnomaly(id);
+            console.log('resolveAnomaly response:', res);
+            await loadAndRender();
+          }catch(e){ alert('Erreur lors de la résolution'); console.error(e); btn.disabled=false; btn.textContent=prev; }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
