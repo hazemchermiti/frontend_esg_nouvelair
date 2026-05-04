@@ -84,6 +84,67 @@ async function registerUser(email, password, fullName, role, isActive) {
     }
 }
 
+async function getUsers() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.detail || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data?.users || data || [];
+    } catch (error) {
+        console.error('getUsers error:', error);
+        throw error;
+    }
+}
+
+async function updateUserProfile(userId, profileData) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify(profileData),
+        });
+
+        if (response.ok) {
+            return await response.json();
+        }
+
+        if (response.status === 404 || response.status === 405) {
+            const fallback = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify(profileData),
+            });
+            if (fallback.ok) {
+                return await fallback.json();
+            }
+            const fallbackErr = await fallback.json().catch(() => null);
+            throw new Error(fallbackErr?.detail || `HTTP ${fallback.status}`);
+        }
+
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.detail || `HTTP ${response.status}`);
+    } catch (error) {
+        console.error('updateUserProfile error:', error);
+        throw error;
+    }
+}
+
 // Dans fetch.js
 async function loadDashboardData(year = 2025) {
     try {

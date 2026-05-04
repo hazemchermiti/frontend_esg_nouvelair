@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Paramètres - Nouvelair ESG</title>
+  <link href="sidebar.css" rel="stylesheet">
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--muted:#7f8a9f;--accent:#1e3a5f;--accent-soft:#e6f4f1;--border:#e7edf4;--success:#34d399;--danger:#ef4444;}
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#0f172a}
+    .main-content{padding:28px 32px}
+    .container{max-width:1180px;margin:0 auto}
+    .page-header{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-bottom:24px}
+    .page-title{flex:1;min-width:240px}
+    .page-title h1{margin:0;font-size:28px;color:#0b1220}
+    .page-title p{margin:8px 0 0;color:var(--muted);font-size:14px;max-width:680px;line-height:1.6}
+    .profile-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px;flex:1;min-width:300px;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
+    .avatar{width:72px;height:72px;border-radius:50%;background:#1e3a5f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;text-transform:uppercase;flex-shrink:0}
+    .profile-info{display:flex;flex-direction:column;gap:4px}
+    .profile-name{font-size:18px;font-weight:700;color:#0b1220}
+    .profile-role{font-size:14px;color:var(--accent)}
+    .profile-subtitle{font-size:13px;color:var(--muted)}
+    .profile-actions{margin-left:auto;display:flex;gap:10px}
+    .btn{border:none;border-radius:12px;padding:10px 16px;font-weight:600;cursor:pointer}
+    .btn.primary{background:var(--accent);color:#fff}
+    .btn.secondary{background:var(--accent-soft);color:var(--accent);}
+    .search-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .search-input{flex:1;min-width:220px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#0b1220}
+    .stats{color:var(--muted);font-size:14px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,0.05)}
+    table{width:100%;border-collapse:collapse}
+    thead th{text-align:left;padding:16px 12px;color:var(--muted);font-size:13px;border-bottom:1px solid #eef2f6}
+    tbody td{padding:16px 12px;border-bottom:1px solid #f3f6f8;vertical-align:middle}
+    tbody tr:hover{background:#f8fbff}
+    .status-badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ecfdf5;color:#166534}
+    .empty{padding:40px;text-align:center;color:var(--muted)}
+    .modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+    .modal-overlay.show{display:flex}
+    .modal-card{width:100%;max-width:520px;background:#fff;border-radius:20px;padding:28px;box-shadow:0 24px 48px rgba(15,23,42,0.18);position:relative}
+    .modal-title{margin:0 0 16px;font-size:22px;color:#0b1220}
+    .modal-close{position:absolute;top:18px;right:18px;width:36px;height:36px;border:none;border-radius:50%;background:#f3f4f6;color:#475569;font-size:18px;cursor:pointer}
+    .field{display:flex;flex-direction:column;margin-bottom:16px}
+    .field label{font-size:13px;font-weight:600;color:#475569;margin-bottom:8px}
+    .field input,.field select{padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#0b1220;font-size:14px}
+    .field small{color:var(--muted);margin-top:6px}
+    .form-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap}
+    .message{font-size:13px;color:#166534;margin-top:8px}
+    .message.error{color:#b91c1c}
+    @media (max-width:860px){.page-header{flex-direction:column;align-items:flex-start}.profile-actions{width:100%;justify-content:flex-start}.search-bar{flex-direction:column;align-items:flex-start}}  
+  </style>
+</head>
+<body>
+  <main class="main-content">
+    <div class="container">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Paramètres utilisateurs</h1>
+          <p>Consultez tous les utilisateurs de la plateforme, recherchez par nom complet, et mettez à jour votre profil depuis l’avatar.</p>
+        </div>
+        <div class="profile-box">
+          <button id="editProfileBtn" class="btn secondary">Modifier mon profil</button>
+          <div class="avatar" id="profileAvatar">AB</div>
+          <div class="profile-info">
+            <div class="profile-name" id="profileName">Utilisateur</div>
+            <div class="profile-role" id="profileRole">Rôle</div>
+            <div class="profile-subtitle" id="profileEmail">email@example.com</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="search-bar">
+        <input id="searchInput" class="search-input" placeholder="Rechercher par nom complet" aria-label="Recherche utilisateur" />
+        <div class="stats" id="userCount">0 utilisateurs</div>
+      </div>
+
+      <div class="card">
+        <div style="overflow-x:auto;">
+          <table id="usersTable">
+            <thead>
+              <tr>
+                <th>Nom complet</th>
+                <th>Email</th>
+                <th>Rôle</th>
+                <th>Actif</th>
+                <th>Créé le</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty" style="display:none">Aucun utilisateur trouvé.</div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+      <button class="modal-close" id="closeModalBtn" aria-label="Fermer">×</button>
+      <h2 class="modal-title" id="profileModalTitle">Mettre à jour mon profil</h2>
+      <form id="profileForm">
+        <div class="field">
+          <label for="modalFullName">Nom complet</label>
+          <input id="modalFullName" name="full_name" type="text" required />
+        </div>
+        <div class="field">
+          <label for="modalEmail">Email</label>
+          <input id="modalEmail" name="email" type="email" required />
+        </div>
+        <div class="field">
+          <label for="modalRole">Rôle</label>
+          <select id="modalRole" name="role" required>
+            <option value="ADMIN">Admin</option>
+            <option value="ANALYSTE ESG">Analyste ESG</option>
+            <option value="LECTEUR">Lecteur</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="modalActive">Statut</label>
+          <select id="modalActive" name="is_active" required>
+            <option value="1">Actif</option>
+            <option value="0">Inactif</option>
+          </select>
+        </div>
+        <div class="form-footer">
+          <button type="button" class="btn secondary" id="cancelModalBtn">Annuler</button>
+          <button type="submit" class="btn primary">Enregistrer</button>
+        </div>
+        <div class="message" id="modalMessage"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="sidebar.js"></script>
+  <script src="fetch.js"></script>
+  <script>
+    const profileAvatar = document.getElementById('profileAvatar');
+    const profileName = document.getElementById('profileName');
+    const profileRole = document.getElementById('profileRole');
+    const profileEmail = document.getElementById('profileEmail');
+    const editProfileBtn = document.getElementById('editProfileBtn');
+    const profileModal = document.getElementById('profileModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelModalBtn = document.getElementById('cancelModalBtn');
+    const profileForm = document.getElementById('profileForm');
+    const modalFullName = document.getElementById('modalFullName');
+    const modalEmail = document.getElementById('modalEmail');
+    const modalRole = document.getElementById('modalRole');
+    const modalActive = document.getElementById('modalActive');
+    const modalMessage = document.getElementById('modalMessage');
+    const searchInput = document.getElementById('searchInput');
+    const usersBody = document.getElementById('usersBody');
+    const userCount = document.getElementById('userCount');
+    const emptyState = document.getElementById('emptyState');
+
+    let allUsers = [];
+    let currentUser = null;
+
+    function getInitials(name) {
+      if (!name) return 'U';
+      const parts = name.trim().split(/\s+/).filter(Boolean);
+      if (parts.length === 0) return 'U';
+      if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    function updateProfileHeader(user) {
+      const name = user?.full_name || user?.name || 'Utilisateur';
+      const role = user?.role || 'Rôle non défini';
+      profileAvatar.textContent = getInitials(name);
+      profileName.textContent = name;
+      profileRole.textContent = role;
+      profileEmail.textContent = user?.email || '';
+    }
+
+    function openModal() {
+      modalMessage.textContent = '';
+      profileModal.classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      profileModal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function renderUsers(users) {
+      usersBody.innerHTML = '';
+      const filtered = Array.isArray(users) ? users : [];
+      if (filtered.length === 0) {
+        emptyState.style.display = 'block';
+        userCount.textContent = '0 utilisateurs';
+        return;
+      }
+      emptyState.style.display = 'none';
+      userCount.textContent = `${filtered.length} utilisateur${filtered.length > 1 ? 's' : ''}`;
+
+      filtered.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${user.full_name || ''}</td>
+          <td>${user.email || ''}</td>
+          <td>${user.role || ''}</td>
+          <td>${user.is_active ? 'Oui' : 'Non'}</td>
+          <td>${user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : ''}</td>
+        `;
+        usersBody.appendChild(tr);
+      });
+    }
+
+    function filterUsers(query) {
+      const normalized = String(query || '').trim().toLowerCase();
+      if (!normalized) {
+        renderUsers(allUsers);
+        return;
+      }
+      const filtered = allUsers.filter(user => String(user.full_name || '').toLowerCase().includes(normalized));
+      renderUsers(filtered);
+    }
+
+    async function loadUsers() {
+      try {
+        const users = await getUsers();
+        allUsers = Array.isArray(users) ? users : [];
+        renderUsers(allUsers);
+      } catch (error) {
+        usersBody.innerHTML = `<tr><td colspan="5" style="padding:20px;color:${'#b91c1c'}">Impossible de charger les utilisateurs.</td></tr>`;
+        emptyState.style.display = 'none';
+      }
+    }
+
+    function fillProfileForm(user) {
+      if (!user) return;
+      modalFullName.value = user.full_name || '';
+      modalEmail.value = user.email || '';
+      modalRole.value = String(user.role || '').toUpperCase();
+      modalActive.value = user.is_active ? '1' : '0';
+    }
+
+    async function handleProfileSubmit(event) {
+      event.preventDefault();
+      if (!currentUser?.id) return;
+
+      const updatedData = {
+        full_name: modalFullName.value.trim(),
+        email: modalEmail.value.trim(),
+        role: modalRole.value,
+        is_active: Number(modalActive.value),
+      };
+
+      if (!updatedData.full_name || !updatedData.email) {
+        modalMessage.textContent = 'Le nom complet et l’email sont requis.';
+        modalMessage.className = 'message error';
+        return;
+      }
+
+      try {
+        const result = await updateUserProfile(currentUser.id, updatedData);
+        const updatedUser = result?.user || result || updatedData;
+        currentUser = { ...currentUser, ...updatedUser };
+        localStorage.setItem('user', JSON.stringify(currentUser));
+        updateProfileHeader(currentUser);
+        modalMessage.textContent = 'Profil mis à jour avec succès.';
+        modalMessage.className = 'message';
+        await loadUsers();
+        setTimeout(closeModal, 1200);
+      } catch (error) {
+        modalMessage.textContent = error.message || 'Impossible de mettre à jour le profil.';
+        modalMessage.className = 'message error';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const stored = localStorage.getItem('user');
+      if (!stored) {
+        window.location.href = 'login.html';
+        return;
+      }
+
+      currentUser = JSON.parse(stored);
+      updateProfileHeader(currentUser);
+      fillProfileForm(currentUser);
+      loadUsers();
+
+      searchInput.addEventListener('input', (event) => filterUsers(event.target.value));
+      editProfileBtn.addEventListener('click', () => {
+        fillProfileForm(currentUser);
+        openModal();
+      });
+      profileAvatar.addEventListener('click', () => {
+        fillProfileForm(currentUser);
+        openModal();
+      });
+      closeModalBtn.addEventListener('click', closeModal);
+      cancelModalBtn.addEventListener('click', closeModal);
+      profileModal.addEventListener('click', (event) => {
+        if (event.target === profileModal) closeModal();
+      });
+      profileForm.addEventListener('submit', handleProfileSubmit);
+    });
+  </script>
+</body>
+</html>
