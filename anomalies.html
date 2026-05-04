@@ -68,7 +68,6 @@
               <th class="right">Z-score</th>
               <th>Sévérité</th>
               <th>Statut</th>
-              <th></th>
             </tr>
           </thead>
           <tbody id="anomaliesBody">
@@ -173,7 +172,6 @@
           <td class="right muted">${a.z_score ?? ''}</td>
           <td><span class="badge ${sevClass(a.severity)}">${a.severity || 'info'}</span></td>
           <td><span class="badge ${stClass}">${stText}</span></td>
-          <td class="right"><button class="btn" data-action="resolve" data-id="${a.id}">Résoudre</button></td>
         `;
         frag.appendChild(tr);
       });
@@ -204,22 +202,7 @@
         btn.disabled=false; btn.textContent=old;
       });
 
-      // Delegate resolve clicks
-      document.getElementById('anomaliesBody').addEventListener('click', async (ev)=>{
-        const btn = ev.target.closest('button[data-action]');
-        if(!btn) return;
-        const action = btn.dataset.action;
-        if(action === 'resolve'){
-          const id = btn.dataset.id;
-          if(!confirm('Marquer cette anomalie comme résolue ?')) return;
-          btn.disabled = true; const prev = btn.textContent; btn.textContent='...';
-          try{
-            const res = await window.resolveAnomaly(id);
-            console.log('resolveAnomaly response:', res);
-            await loadAndRender();
-          }catch(e){ alert('Erreur lors de la résolution'); console.error(e); btn.disabled=false; btn.textContent=prev; }
-        }
-      });
+
     });
   </script>
 </body>

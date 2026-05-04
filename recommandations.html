@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recommandations - ESG Nouvelair</title>
+  <link href="sidebar.css" rel="stylesheet">
+  <style>
+    :root{--bg:#f6f8fb;--card:#fff;--muted:#9aa6b2;--accent:#1e3a5f;--green:#34d399;--orange:#f59e0b;--red:#ef4444}
+    body{font-family:Inter,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);margin:0;padding:32px;color:#0f172a}
+    .main-content{flex:1;padding:24px 32px}
+    .container{max-width:1200px;margin:0 auto}
+    h1{font-size:24px;font-weight:700;margin:0 0 8px;color:#0b1220}
+    .subtitle{color:var(--muted);font-size:14px;margin-bottom:24px}
+    .controls{display:flex;gap:12px;align-items:center;margin-bottom:32px;flex-wrap:wrap}
+    .controls select{padding:8px 12px;border-radius:8px;border:1px solid #e6eef6;background:#fff;color:#0b1220;font-family:inherit}
+    .btn{background:var(--accent);color:#fff;padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:500}
+    .btn:hover{opacity:.9}
+    #recommendations-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:20px;margin-top:24px}
+    .rec-card{background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.06);padding:24px;display:flex;flex-direction:column;gap:12px;transition:all .3s ease}
+    .rec-card:hover{transform:translateY(-4px);box-shadow:0 12px 24px rgba(0,0,0,0.12)}
+    .rec-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+    .rec-title{font-size:16px;font-weight:600;color:#0b1220;flex:1}
+    .badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+    .badge-haute{background:var(--red);color:#fff}
+    .badge-moyenne{background:var(--orange);color:#fff}
+    .badge-basse{background:#3b82f6;color:#fff}
+    .rec-analysis{color:var(--muted);font-size:13px;line-height:1.5;margin:8px 0}
+    .rec-recommendation{background:#f9fafb;border-left:4px solid var(--accent);padding:12px;border-radius:8px;font-size:13px;line-height:1.5}
+    .rec-footer{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6}
+    .rec-pillar{display:inline-block;padding:4px 10px;background:#e6eef6;color:var(--accent);border-radius:6px;font-size:12px;font-weight:500}
+    .rec-impact{color:var(--green);font-size:13px;font-weight:600}
+    .rec-status{display:inline-block;padding:4px 8px;background:#ffeaa7;color:#7a4100;border-radius:4px;font-size:11px;font-weight:600}
+    .loader{width:24px;height:24px;border-radius:50%;border:3px solid #e6eef6;border-top-color:var(--accent);animation:spin 1s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .loading-card{display:flex;align-items:center;justify-content:center;gap:12px;padding:40px;color:var(--muted)}
+    .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty-state-icon{font-size:48px;margin-bottom:16px}
+    .error-card{background:#fee2e2;border-left:4px solid var(--red);padding:16px;border-radius:8px;margin-bottom:20px}
+    .error-card-text{color:#7a1f1f;font-size:13px}
+  </style>
+</head>
+<body>
+  <main class="main-content">
+    <div class="container">
+      <h1>Recommandations IA</h1>
+      <p class="subtitle">Analyse des anomalies détectées et recommandations d'amélioration</p>
+
+      <div class="controls">
+        <input id="kpiInput" placeholder="Code KPI (ex: CO2)" style="padding:8px 12px;border-radius:8px;border:1px solid #e6eef6;background:#fff" />
+        <input id="yearInput" placeholder="Année (ex: 2025)" style="width:110px;padding:8px 12px;border-radius:8px;border:1px solid #e6eef6;background:#fff" />
+        <button id="detectBtn" class="btn">Détecter Anomalies</button>
+
+        <div style="flex:1"></div>
+
+        <select id="pillarFilter">
+          <option value="">Tous les piliers</option>
+          <option value="Environnement">Environnement</option>
+          <option value="Social">Social</option>
+          <option value="Gouvernance">Gouvernance</option>
+        </select>
+        <select id="priorityFilter">
+          <option value="">Toutes les priorités</option>
+          <option value="haute">Haute priorité</option>
+          <option value="moyenne">Moyenne priorité</option>
+          <option value="basse">Basse priorité</option>
+        </select>
+      </div>
+
+      <!-- Tableau des anomalies détectées -->
+      <div id="anomaliesSection" style="display:none;margin-bottom:32px">
+        <h2 style="font-size:18px;font-weight:600;margin:24px 0 16px;color:#0b1220">Anomalies Détectées</h2>
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid #eef2f6">
+              <th style="text-align:left;padding:14px 8px;color:var(--muted);font-weight:600;font-size:13px">Date</th>
+              <th style="text-align:left;padding:14px 8px;color:var(--muted);font-weight:600;font-size:13px">Description</th>
+              <th style="text-align:right;padding:14px 8px;color:var(--muted);font-weight:600;font-size:13px">Sévérité</th>
+              <th style="text-align:left;padding:14px 8px;color:var(--muted);font-weight:600;font-size:13px">Statut</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="anomaliesTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <div id="recommendations-grid">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <p>Aucune recommandation pour le moment. Cliquez sur "Analyser" depuis une anomalie pour en générer une.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="sidebar.js"></script>
+  <script src="fetch.js"></script>
+  <script>
+    // Map KPI codes to pillar names
+    const kpiToPillar = {
+      'CO2': 'Environnement',
+      'ELEC': 'Environnement',
+      'WASTE': 'Environnement',
+      'FUEL_SURCHARGE': 'Environnement',
+      'LTIR': 'Social',
+      'FORMATION': 'Social',
+      'PARITE_HF': 'Social',
+      'TAX_OBLIGAT': 'Gouvernance',
+      'AVIA_ACTIVE': 'Gouvernance',
+      'PAYMENT_TRACE': 'Gouvernance'
+    };
+
+    function kpiCodeToPillar(kpiCode) {
+      return kpiToPillar[String(kpiCode || '').toUpperCase()] || 'Autre';
+    }
+
+    function getPriorityBadgeClass(priority) {
+      const p = String(priority || '').toLowerCase();
+      if (p.includes('haute') || p.includes('high')) return 'badge-haute';
+      if (p.includes('moyen') || p.includes('medium')) return 'badge-moyenne';
+      return 'badge-basse';
+    }
+
+    function getPriorityLabel(priority) {
+      const p = String(priority || '').toLowerCase();
+      if (p.includes('haute') || p.includes('high')) return 'Haute';
+      if (p.includes('moyen') || p.includes('medium')) return 'Moyenne';
+      return 'Basse';
+    }
+
+    // Store recommendations in memory for filtering
+    let allRecommendations = [];
+
+    function renderRecommendations() {
+      const pillarFilter = document.getElementById('pillarFilter').value || '';
+      const priorityFilter = document.getElementById('priorityFilter').value || '';
+      const grid = document.getElementById('recommendations-grid');
+
+      let filtered = allRecommendations;
+      if (pillarFilter) {
+        filtered = filtered.filter(r => r.pillar === pillarFilter);
+      }
+      if (priorityFilter) {
+        const p = String(priorityFilter).toLowerCase();
+        filtered = filtered.filter(r => String(r.priority || '').toLowerCase().includes(p));
+      }
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📋</div><p>Aucune recommandation ne correspond aux filtres sélectionnés.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(rec => `
+        <div class="rec-card" data-rec-id="${rec.id}">
+          <div class="rec-header">
+            <div class="rec-title">${rec.title || 'Recommandation'}</div>
+            <span class="badge ${getPriorityBadgeClass(rec.priority)}">${getPriorityLabel(rec.priority)}</span>
+          </div>
+          <div class="rec-analysis">${rec.analysis || 'Analyse détaillée en cours...'}</div>
+          <div class="rec-recommendation">
+            <strong>📌 Action recommandée :</strong><br/>
+            ${rec.recommendation || 'À définir'}
+          </div>
+          <div class="rec-footer">
+            <div>
+              <div class="rec-pillar">${rec.pillar}</div>
+              <div class="rec-status">${rec.status || 'À définir'}</div>
+            </div>
+            <div class="rec-impact">💚 ${rec.impact_estimated || 'Impact à évaluer'}</div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadRecommendationFromAnomaly(anomalyId) {
+      if (!anomalyId) return;
+      const grid = document.getElementById('recommendations-grid');
+      grid.innerHTML = '<div class="loading-card"><div class="loader"></div> <span>Analyse en cours par l\'IA...</span></div>';
+
+      try {
+        const response = await window.generateRecommendation(anomalyId);
+        console.log('generateRecommendation response:', response);
+
+        // Handle response structure (may be { data: {...} } or direct object)
+        const recData = response.data || response;
+        const newRec = {
+          id: Date.now(),
+          anomalyId: anomalyId,
+          title: recData.title || 'Recommandation',
+          analysis: recData.analysis || '',
+          recommendation: recData.recommendation || '',
+          impact_estimated: recData.impact_estimated || 'À évaluer',
+          priority: recData.priority || 'basse',
+          pillar: kpiCodeToPillar(recData.kpi_code),
+          status: 'Planifiée',
+          kpi_code: recData.kpi_code
+        };
+
+        allRecommendations.unshift(newRec);
+        renderRecommendations();
+        
+        // Smooth scroll to first card
+        setTimeout(() => {
+          const firstCard = document.querySelector('.rec-card');
+          if (firstCard) {
+            firstCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 100);
+      } catch (err) {
+        console.error('Error loading recommendation:', err);
+        grid.innerHTML = `
+          <div class="error-card">
+            <div class="error-card-text">
+              ⚠️ Erreur lors de la génération de la recommandation : ${err.message || 'Veuillez réessayer'}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('pillarFilter').addEventListener('change', renderRecommendations);
+      document.getElementById('priorityFilter').addEventListener('change', renderRecommendations);
+
+      // Detect anomalies button
+      document.getElementById('detectBtn').addEventListener('click', async () => {
+        const kpi = document.getElementById('kpiInput').value.trim();
+        const year = document.getElementById('yearInput').value.trim();
+        if(!kpi){ alert('Entrez le code KPI (ex: CO2)'); return; }
+        
+        const btn = document.getElementById('detectBtn');
+        const old = btn.textContent; btn.disabled = true; btn.textContent='Détection en cours...';
+        
+        try{
+          const detectRes = await window.detectAnomalies(kpi, year || null);
+          console.log('detectAnomalies response:', detectRes);
+          
+          // Display anomalies table
+          const section = document.getElementById('anomaliesSection');
+          const tbody = document.getElementById('anomaliesTableBody');
+          section.style.display = 'block';
+          tbody.innerHTML = '';
+          
+          if(!detectRes || detectRes.length === 0){
+            tbody.innerHTML = '<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--muted)">Aucune anomalie détectée</td></tr>';
+          } else {
+            detectRes.forEach(anomaly => {
+              const date = anomaly.date_detected ? new Date(anomaly.date_detected).toLocaleDateString('fr-FR') : '';
+              const severity = String(anomaly.severity || 'info').toLowerCase();
+              const status = String(anomaly.status || 'NEW').toUpperCase();
+              const sevClass = severity.includes('crit') ? 'sev-critical' : (severity.includes('warn') ? 'sev-warning' : 'sev-info');
+              
+              const tr = document.createElement('tr');
+              tr.style.borderBottom = '1px solid #f3f6f8';
+              tr.innerHTML = `
+                <td style="padding:16px 8px">${date}</td>
+                <td style="padding:16px 8px;color:#0b1220">${anomaly.description || ''}</td>
+                <td style="padding:16px 8px;text-align:right"><span class="badge ${sevClass}">${anomaly.severity || 'info'}</span></td>
+                <td style="padding:16px 8px"><span class="badge" style="background:#ffdede;color:#7a1f1f">${status === 'NEW' ? 'Nouvelle' : 'Résolue'}</span></td>
+                <td style="padding:16px 8px;text-align:right"><button class="btn-analyze" data-id="${anomaly.id}" style="background:#3b82f6;color:#fff;padding:6px 12px;border-radius:6px;border:none;cursor:pointer;font-size:12px">Analyser</button></td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+          
+          // Add event listeners to analyze buttons
+          document.querySelectorAll('.btn-analyze').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const anomalyId = e.target.dataset.id;
+              loadRecommendationFromAnomaly(anomalyId);
+            });
+          });
+        }catch(e){ 
+          alert(`Erreur lors de la détection: ${e.message || e}`); 
+          console.error(e); 
+        }
+        btn.disabled=false; btn.textContent=old;
+      });
+
+      // Check if called from anomalies with anomalyId in URL or sessionStorage
+      const params = new URLSearchParams(window.location.search);
+      const anomalyId = params.get('anomalyId') || sessionStorage.getItem('selectedAnomalyId');
+      if (anomalyId) {
+        loadRecommendationFromAnomaly(anomalyId);
+        sessionStorage.removeItem('selectedAnomalyId');
+      }
+    });
+
+    // Expose globally for anomalies.html to call
+    window.loadRecommendationFromAnomaly = loadRecommendationFromAnomaly;
+  </script>
+</body>
+</html>

@@ -270,3 +270,25 @@ async function resolveAnomaly(anomalyId) {
 window.getAnomalies = getAnomalies;
 window.detectAnomalies = detectAnomalies;
 window.resolveAnomaly = resolveAnomaly;
+
+// Recommandation IA pour une anomalie
+async function generateRecommendation(anomalyId) {
+    if (!anomalyId) throw new Error('anomalyId requis');
+    const url = `${API_BASE_URL}/api/anomalies/${encodeURIComponent(anomalyId)}/recommendation`;
+    try {
+        const res = await fetch(url, {
+            method: 'GET',
+            mode: 'cors',
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (e) {
+        console.error('generateRecommendation error:', e);
+        throw e;
+    }
+}
+window.generateRecommendation = generateRecommendation;
