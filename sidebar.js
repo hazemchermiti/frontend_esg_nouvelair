@@ -290,7 +290,14 @@ function setupSidebarEvents() {
     });
 
     if (sidebarLogoutBtn) {
-        sidebarLogoutBtn.addEventListener('click', () => {
+        sidebarLogoutBtn.addEventListener('click', async () => {
+            if (typeof window.logoutUser === 'function') {
+                try {
+                    await window.logoutUser();
+                } catch (error) {
+                    console.warn('Logout request failed:', error);
+                }
+            }
             localStorage.removeItem('user');
             window.location.href = 'login.html';
         });

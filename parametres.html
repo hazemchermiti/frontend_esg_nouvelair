@@ -16,16 +16,32 @@
     .page-title p{margin:8px 0 0;color:var(--muted);font-size:14px;max-width:680px;line-height:1.6}
     .profile-box{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px 22px;display:flex;align-items:center;gap:16px;flex:1;min-width:300px;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
     .avatar{width:72px;height:72px;border-radius:50%;background:#1e3a5f;color:#fff;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;text-transform:uppercase;flex-shrink:0}
+    .avatar-sm{width:36px;height:36px;font-size:14px}
     .profile-info{display:flex;flex-direction:column;gap:4px}
     .profile-name{font-size:18px;font-weight:700;color:#0b1220}
     .profile-role{font-size:14px;color:var(--accent)}
     .profile-subtitle{font-size:13px;color:var(--muted)}
+    .user-cell{display:flex;align-items:center;gap:12px;min-height:52px}
+    .user-info{display:flex;flex-direction:column;gap:4px;min-width:0}
+    .user-name{font-weight:700;color:#0b1220;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+    .user-role-small{font-size:12px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
     .profile-actions{margin-left:auto;display:flex;gap:10px}
     .btn{border:none;border-radius:12px;padding:10px 16px;font-weight:600;cursor:pointer}
     .btn.primary{background:var(--accent);color:#fff}
     .btn.secondary{background:var(--accent-soft);color:var(--accent);}
+    .action-cell{display:flex;gap:8px;align-items:center;justify-content:flex-end;min-height:52px;}
+    .action-btn{display:inline-flex;align-items:center;justify-content:center;border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;line-height:1.2;min-height:36px;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;}
+    .action-btn:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(15,23,42,0.08);}
+    .status-btn{background:#f59e0b;color:#fff}
+    .status-btn:hover{background:#d97706}
+    .delete-btn{background:#ef4444;color:#fff}
+    .delete-btn:hover{background:#dc2626}
+    .action-placeholder{color:var(--muted);font-size:13px}
     .search-bar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
-    .search-input{flex:1;min-width:220px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#fff;color:#0b1220}
+    .search-input-wrapper{position:relative;flex:1;min-width:220px;max-width:420px}
+    .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--muted);pointer-events:none}
+    .search-input{width:100%;padding:12px 14px 12px 40px;border-radius:14px;border:1px solid var(--border);background:#fff;color:#0b1220;box-shadow:0 8px 24px rgba(15,23,42,0.06)}
+    .search-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(30,58,95,0.08)}
     .stats{color:var(--muted);font-size:14px}
     .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:0 8px 24px rgba(15,23,42,0.05)}
     table{width:100%;border-collapse:collapse}
@@ -55,34 +71,40 @@
       <div class="page-header">
         <div class="page-title">
           <h1>Paramètres utilisateurs</h1>
-          <p>Consultez tous les utilisateurs de la plateforme, recherchez par nom complet, et mettez à jour votre profil depuis l’avatar.</p>
+          <p>Consultez la liste des utilisateurs et gérez les analystes depuis cet écran.</p>
         </div>
         <div class="profile-box">
-          <button id="editProfileBtn" class="btn secondary">Modifier mon profil</button>
           <div class="avatar" id="profileAvatar">AB</div>
           <div class="profile-info">
             <div class="profile-name" id="profileName">Utilisateur</div>
             <div class="profile-role" id="profileRole">Rôle</div>
             <div class="profile-subtitle" id="profileEmail">email@example.com</div>
           </div>
+          <div class="profile-actions">
+            <button id="editProfileBtn" class="btn secondary">Modifier mon profil</button>
+            <button id="createAnalystBtn" class="btn primary">Créer un analyste</button>
+          </div>
         </div>
       </div>
 
+      <div style="margin-bottom:18px;color:#475569;font-size:14px;" id="userCount">0 utilisateurs</div>
       <div class="search-bar">
-        <input id="searchInput" class="search-input" placeholder="Rechercher par nom complet" aria-label="Recherche utilisateur" />
-        <div class="stats" id="userCount">0 utilisateurs</div>
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔎</span>
+          <input id="searchInput" class="search-input" type="search" placeholder="Rechercher par nom d'utilisateur" aria-label="Recherche utilisateur" />
+        </div>
       </div>
-
       <div class="card">
         <div style="overflow-x:auto;">
           <table id="usersTable">
             <thead>
               <tr>
-                <th>Nom complet</th>
+                <th>Utilisateur</th>
                 <th>Email</th>
                 <th>Rôle</th>
                 <th>Actif</th>
                 <th>Créé le</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="usersBody"></tbody>
@@ -107,19 +129,8 @@
           <input id="modalEmail" name="email" type="email" required />
         </div>
         <div class="field">
-          <label for="modalRole">Rôle</label>
-          <select id="modalRole" name="role" required>
-            <option value="ADMIN">Admin</option>
-            <option value="ANALYSTE ESG">Analyste ESG</option>
-            <option value="LECTEUR">Lecteur</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="modalActive">Statut</label>
-          <select id="modalActive" name="is_active" required>
-            <option value="1">Actif</option>
-            <option value="0">Inactif</option>
-          </select>
+          <label for="modalPassword">Mot de passe</label>
+          <input id="modalPassword" name="password" type="password" placeholder="Laisser vide pour ne pas changer" />
         </div>
         <div class="form-footer">
           <button type="button" class="btn secondary" id="cancelModalBtn">Annuler</button>
@@ -130,173 +141,306 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="analystModal">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="analystModalTitle">
+      <button class="modal-close" id="closeAnalystModalBtn" aria-label="Fermer">×</button>
+      <h2 class="modal-title" id="analystModalTitle">Créer un analyste</h2>
+      <form id="analystForm">
+        <div class="field">
+          <label for="analystFullName">Nom complet</label>
+          <input id="analystFullName" name="full_name" type="text" required />
+        </div>
+        <div class="field">
+          <label for="analystEmail">Email</label>
+          <input id="analystEmail" name="email" type="email" required />
+        </div>
+        <div class="field">
+          <label for="analystPassword">Mot de passe</label>
+          <input id="analystPassword" name="password" type="password" minlength="6" placeholder="Minimum 6 caractères" required />
+        </div>
+        <div class="field">
+          <label for="analystStatus">Statut</label>
+          <select id="analystStatus" name="is_active">
+            <option value="1">Actif</option>
+            <option value="0">Inactif</option>
+          </select>
+        </div>
+        <div class="form-footer">
+          <button type="button" class="btn secondary" id="cancelAnalystBtn">Annuler</button>
+          <button type="submit" class="btn primary">Créer</button>
+        </div>
+        <div class="message" id="analystMessage"></div>
+      </form>
+    </div>
+  </div>
+
   <script src="sidebar.js"></script>
   <script src="fetch.js"></script>
   <script>
+    let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!currentUser) {
+      window.location.href = 'login.html';
+    }
+
     const profileAvatar = document.getElementById('profileAvatar');
     const profileName = document.getElementById('profileName');
     const profileRole = document.getElementById('profileRole');
     const profileEmail = document.getElementById('profileEmail');
     const editProfileBtn = document.getElementById('editProfileBtn');
+    const createAnalystBtn = document.getElementById('createAnalystBtn');
+    const usersBody = document.getElementById('usersBody');
+    const userCount = document.getElementById('userCount');
+    const searchInput = document.getElementById('searchInput');
+    const emptyState = document.getElementById('emptyState');
+
     const profileModal = document.getElementById('profileModal');
     const closeModalBtn = document.getElementById('closeModalBtn');
     const cancelModalBtn = document.getElementById('cancelModalBtn');
     const profileForm = document.getElementById('profileForm');
     const modalFullName = document.getElementById('modalFullName');
     const modalEmail = document.getElementById('modalEmail');
-    const modalRole = document.getElementById('modalRole');
-    const modalActive = document.getElementById('modalActive');
+    const modalPassword = document.getElementById('modalPassword');
     const modalMessage = document.getElementById('modalMessage');
-    const searchInput = document.getElementById('searchInput');
-    const usersBody = document.getElementById('usersBody');
-    const userCount = document.getElementById('userCount');
-    const emptyState = document.getElementById('emptyState');
+
+    const analystModal = document.getElementById('analystModal');
+    const closeAnalystModalBtn = document.getElementById('closeAnalystModalBtn');
+    const cancelAnalystBtn = document.getElementById('cancelAnalystBtn');
+    const analystForm = document.getElementById('analystForm');
+    const analystFullName = document.getElementById('analystFullName');
+    const analystEmail = document.getElementById('analystEmail');
+    const analystPassword = document.getElementById('analystPassword');
+    const analystStatus = document.getElementById('analystStatus');
+    const analystMessage = document.getElementById('analystMessage');
 
     let allUsers = [];
-    let currentUser = null;
 
     function getInitials(name) {
       if (!name) return 'U';
-      const parts = name.trim().split(/\s+/).filter(Boolean);
+      const parts = String(name).trim().split(/\s+/).filter(Boolean);
       if (parts.length === 0) return 'U';
       if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
 
     function updateProfileHeader(user) {
-      const name = user?.full_name || user?.name || 'Utilisateur';
-      const role = user?.role || 'Rôle non défini';
+      const name = user?.full_name || 'Utilisateur';
       profileAvatar.textContent = getInitials(name);
       profileName.textContent = name;
-      profileRole.textContent = role;
+      profileRole.textContent = user?.role || 'Rôle inconnu';
       profileEmail.textContent = user?.email || '';
     }
 
-    function openModal() {
-      modalMessage.textContent = '';
-      profileModal.classList.add('show');
-      document.body.style.overflow = 'hidden';
+    function getRoleBadge(role) {
+      return `<span class="status-badge">${String(role || '').toUpperCase()}</span>`;
     }
 
-    function closeModal() {
-      profileModal.classList.remove('show');
-      document.body.style.overflow = '';
+    function filterUsersByName(searchTerm) {
+      const normalized = String(searchTerm || '').trim().toLowerCase();
+      if (!normalized) {
+        return allUsers;
+      }
+      return allUsers.filter((user) => String(user.full_name || '').toLowerCase().includes(normalized));
     }
 
     function renderUsers(users) {
       usersBody.innerHTML = '';
-      const filtered = Array.isArray(users) ? users : [];
-      if (filtered.length === 0) {
+      if (!Array.isArray(users) || users.length === 0) {
         emptyState.style.display = 'block';
         userCount.textContent = '0 utilisateurs';
         return;
       }
-      emptyState.style.display = 'none';
-      userCount.textContent = `${filtered.length} utilisateur${filtered.length > 1 ? 's' : ''}`;
 
-      filtered.forEach(user => {
+      emptyState.style.display = 'none';
+      userCount.textContent = `${users.length} utilisateur${users.length > 1 ? 's' : ''}`;
+
+      users.forEach((user) => {
         const tr = document.createElement('tr');
+        const avatar = getInitials(user.full_name || user.email || 'U');
+        const actions = [];
+
+        if (currentUser.role === 'ADMIN' && user.role === 'ANALYST') {
+          actions.push(`<button class="action-btn status-btn" data-user-id="${user.id}" data-new-status="${user.is_active ? 0 : 1}">${user.is_active ? 'Désactiver' : 'Activer'}</button>`);
+          actions.push(`<button class="action-btn delete-btn" data-user-id="${user.id}">Supprimer</button>`);
+        } else if (currentUser.id === user.id) {
+          actions.push('<span class="action-placeholder">Mon compte</span>');
+        } else {
+          actions.push('<span class="action-placeholder">-</span>');
+        }
+
         tr.innerHTML = `
-          <td>${user.full_name || ''}</td>
+          <td class="user-cell">
+            <div class="avatar avatar-sm">${avatar}</div>
+            <div class="user-info">
+              <div class="user-name">${user.full_name || '—'}</div>
+              <div class="user-role-small">${user.role || ''}</div>
+            </div>
+          </td>
           <td>${user.email || ''}</td>
-          <td>${user.role || ''}</td>
+          <td>${getRoleBadge(user.role)}</td>
           <td>${user.is_active ? 'Oui' : 'Non'}</td>
           <td>${user.created_at ? new Date(user.created_at).toLocaleDateString('fr-FR') : ''}</td>
+          <td class="action-cell">${actions.join('')}</td>
         `;
         usersBody.appendChild(tr);
       });
-    }
 
-    function filterUsers(query) {
-      const normalized = String(query || '').trim().toLowerCase();
-      if (!normalized) {
-        renderUsers(allUsers);
-        return;
-      }
-      const filtered = allUsers.filter(user => String(user.full_name || '').toLowerCase().includes(normalized));
-      renderUsers(filtered);
+      document.querySelectorAll('.status-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          const userId = event.currentTarget.dataset.userId;
+          const newStatus = Number(event.currentTarget.dataset.newStatus);
+          try {
+            await updateUserStatus(userId, newStatus);
+            await loadUsers();
+          } catch (error) {
+            alert(error.message || 'Impossible de mettre à jour le statut.');
+          }
+        });
+      });
+
+      document.querySelectorAll('.delete-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          const userId = event.currentTarget.dataset.userId;
+          if (!confirm('Voulez-vous vraiment supprimer cet analyste ?')) {
+            return;
+          }
+          try {
+            await deleteUser(userId);
+            await loadUsers();
+          } catch (error) {
+            alert(error.message || 'Impossible de supprimer l’utilisateur.');
+          }
+        });
+      });
     }
 
     async function loadUsers() {
       try {
-        const users = await getUsers();
+        const users = await getUsers(currentUser.id);
         allUsers = Array.isArray(users) ? users : [];
-        renderUsers(allUsers);
+        renderUsers(filterUsersByName(searchInput.value));
       } catch (error) {
-        usersBody.innerHTML = `<tr><td colspan="5" style="padding:20px;color:${'#b91c1c'}">Impossible de charger les utilisateurs.</td></tr>`;
+        usersBody.innerHTML = `<tr><td colspan="6" style="padding:20px;color:#b91c1c">Impossible de charger les utilisateurs.</td></tr>`;
         emptyState.style.display = 'none';
       }
     }
 
-    function fillProfileForm(user) {
-      if (!user) return;
-      modalFullName.value = user.full_name || '';
-      modalEmail.value = user.email || '';
-      modalRole.value = String(user.role || '').toUpperCase();
-      modalActive.value = user.is_active ? '1' : '0';
+    function openModal(modal) {
+      modal.classList.add('show');
+      document.body.style.overflow = 'hidden';
     }
+
+    function closeModal(modal) {
+      modal.classList.remove('show');
+      document.body.style.overflow = '';
+    }
+
+    function openProfileModal() {
+      modalMessage.textContent = '';
+      modalFullName.value = currentUser.full_name || '';
+      modalEmail.value = currentUser.email || '';
+      modalPassword.value = '';
+      openModal(profileModal);
+    }
+
+    function openAnalystModal() {
+      analystMessage.textContent = '';
+      analystForm.reset();
+      analystStatus.value = '1';
+      openModal(analystModal);
+    }
+
+    searchInput.addEventListener('input', () => {
+      renderUsers(filterUsersByName(searchInput.value));
+    });
 
     async function handleProfileSubmit(event) {
       event.preventDefault();
-      if (!currentUser?.id) return;
+      const fullName = modalFullName.value.trim();
+      const email = modalEmail.value.trim();
+      const password = modalPassword.value;
 
-      const updatedData = {
-        full_name: modalFullName.value.trim(),
-        email: modalEmail.value.trim(),
-        role: modalRole.value,
-        is_active: Number(modalActive.value),
-      };
-
-      if (!updatedData.full_name || !updatedData.email) {
-        modalMessage.textContent = 'Le nom complet et l’email sont requis.';
+      if (!fullName || !email) {
+        modalMessage.textContent = 'Le nom et l’email sont requis.';
         modalMessage.className = 'message error';
         return;
       }
 
       try {
-        const result = await updateUserProfile(currentUser.id, updatedData);
-        const updatedUser = result?.user || result || updatedData;
-        currentUser = { ...currentUser, ...updatedUser };
+        const result = await updateMyProfile(fullName, email, password);
+        const updatedUser = result.user ?? result;
+        currentUser = { ...currentUser, full_name: fullName, email, ...updatedUser };
         localStorage.setItem('user', JSON.stringify(currentUser));
         updateProfileHeader(currentUser);
         modalMessage.textContent = 'Profil mis à jour avec succès.';
         modalMessage.className = 'message';
         await loadUsers();
-        setTimeout(closeModal, 1200);
       } catch (error) {
         modalMessage.textContent = error.message || 'Impossible de mettre à jour le profil.';
         modalMessage.className = 'message error';
       }
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const stored = localStorage.getItem('user');
-      if (!stored) {
-        window.location.href = 'login.html';
+    async function handleAnalystSubmit(event) {
+      event.preventDefault();
+      const fullName = analystFullName.value.trim();
+      const email = analystEmail.value.trim();
+      const password = analystPassword.value;
+      const isActive = analystStatus.value;
+
+      if (!fullName || !email || !password) {
+        analystMessage.textContent = 'Tous les champs sont obligatoires.';
+        analystMessage.className = 'message error';
         return;
       }
 
-      currentUser = JSON.parse(stored);
-      updateProfileHeader(currentUser);
-      fillProfileForm(currentUser);
-      loadUsers();
+      if (password.length < 6) {
+        analystMessage.textContent = 'Le mot de passe doit contenir au moins 6 caractères.';
+        analystMessage.className = 'message error';
+        return;
+      }
 
-      searchInput.addEventListener('input', (event) => filterUsers(event.target.value));
-      editProfileBtn.addEventListener('click', () => {
-        fillProfileForm(currentUser);
-        openModal();
-      });
-      profileAvatar.addEventListener('click', () => {
-        fillProfileForm(currentUser);
-        openModal();
-      });
-      closeModalBtn.addEventListener('click', closeModal);
-      cancelModalBtn.addEventListener('click', closeModal);
-      profileModal.addEventListener('click', (event) => {
-        if (event.target === profileModal) closeModal();
-      });
-      profileForm.addEventListener('submit', handleProfileSubmit);
+      try {
+        const result = await createAnalyst(email, password, fullName, isActive);
+        if (result.success) {
+          analystMessage.textContent = 'Analyste créé avec succès.';
+          analystMessage.className = 'message';
+          await loadUsers();
+          setTimeout(() => closeModal(analystModal), 1200);
+        } else {
+          throw new Error(result.error || 'Impossible de créer l’analyste.');
+        }
+      } catch (error) {
+        analystMessage.textContent = error.message || 'Impossible de créer l’analyste.';
+        analystMessage.className = 'message error';
+      }
+    }
+
+    editProfileBtn.addEventListener('click', openProfileModal);
+    createAnalystBtn.addEventListener('click', openAnalystModal);
+    closeModalBtn.addEventListener('click', () => closeModal(profileModal));
+    cancelModalBtn.addEventListener('click', () => closeModal(profileModal));
+    profileModal.addEventListener('click', (event) => {
+      if (event.target === profileModal) {
+        closeModal(profileModal);
+      }
     });
+    profileForm.addEventListener('submit', handleProfileSubmit);
+
+    closeAnalystModalBtn.addEventListener('click', () => closeModal(analystModal));
+    cancelAnalystBtn.addEventListener('click', () => closeModal(analystModal));
+    analystModal.addEventListener('click', (event) => {
+      if (event.target === analystModal) {
+        closeModal(analystModal);
+      }
+    });
+    analystForm.addEventListener('submit', handleAnalystSubmit);
+
+    if (currentUser.role !== 'ADMIN') {
+      createAnalystBtn.style.display = 'none';
+    }
+
+    updateProfileHeader(currentUser);
+    loadUsers();
   </script>
 </body>
 </html>

@@ -84,13 +84,29 @@ async function registerUser(email, password, fullName, role, isActive) {
     }
 }
 
-async function getUsers() {
+function getCurrentUserId() {
     try {
+        const user = JSON.parse(window.localStorage.getItem('user') || 'null');
+        return user?.id ?? null;
+    } catch {
+        return null;
+    }
+}
+
+async function getUsers(currentUserId = null) {
+    try {
+        const userId = currentUserId || getCurrentUserId();
+        const headers = {
+            'Accept': 'application/json',
+        };
+
+        if (userId) {
+            headers['current-user-id'] = String(userId);
+        }
+
         const response = await fetch(`${API_BASE_URL}/users/`, {
             method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-            },
+            headers,
         });
 
         if (!response.ok) {
@@ -103,6 +119,168 @@ async function getUsers() {
     } catch (error) {
         console.error('getUsers error:', error);
         throw error;
+    }
+}
+
+async function createAnalyst(email, password, fullName, isActive = 1) {
+    try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+            throw new Error('Utilisateur non connecté');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/analysts`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'current-user-id': String(currentUserId),
+            },
+            body: JSON.stringify({
+                email: email,
+                password: password,
+                full_name: fullName,
+                is_active: parseInt(isActive, 10),
+            }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return {
+                success: true,
+                data,
+            };
+        }
+
+        const data = await response.json().catch(() => null);
+        return {
+            success: false,
+            error: data?.detail || data?.message || 'Une erreur est survenue',
+        };
+    } catch (error) {
+        console.error('createAnalyst error:', error);
+        return {
+            success: false,
+            error: error.message || 'Erreur lors de la création de l’analyste.',
+        };
+    }
+}
+
+async function updateUserStatus(userId, isActive) {
+    try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+            throw new Error('Utilisateur non connecté');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/status/${encodeURIComponent(userId)}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'current-user-id': String(currentUserId),
+            },
+            body: JSON.stringify({
+                is_active: parseInt(isActive, 10),
+            }),
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            throw new Error(data?.detail || data?.message || `HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateUserStatus error:', error);
+        throw error;
+    }
+}
+
+async function updateMyProfile(fullName, email, password) {
+    try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+            throw new Error('Utilisateur non connecté');
+        }
+
+        const body = { full_name: fullName, email };
+        if (password) {
+            body.password = password;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/me`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'current-user-id': String(currentUserId),
+            },
+            body: JSON.stringify(body),
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            throw new Error(data?.detail || data?.message || `HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('updateMyProfile error:', error);
+        throw error;
+    }
+}
+
+async function deleteUser(userId) {
+    try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+            throw new Error('Utilisateur non connecté');
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/${encodeURIComponent(userId)}`, {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'current-user-id': String(currentUserId),
+            },
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            throw new Error(data?.detail || data?.message || `HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (error) {
+        console.error('deleteUser error:', error);
+        throw error;
+    }
+}
+
+async function logoutUser() {
+    try {
+        const currentUserId = getCurrentUserId();
+        if (!currentUserId) {
+            return { success: false, error: 'Utilisateur non connecté' };
+        }
+
+        const response = await fetch(`${API_BASE_URL}/users/logout`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'current-user-id': String(currentUserId),
+            },
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => null);
+            return { success: false, error: data?.detail || data?.message || `HTTP ${response.status}` };
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('logoutUser error:', error);
+        return { success: false, error: error.message || 'Erreur de déconnexion' };
     }
 }
 
@@ -331,6 +509,11 @@ async function resolveAnomaly(anomalyId) {
 window.getAnomalies = getAnomalies;
 window.detectAnomalies = detectAnomalies;
 window.resolveAnomaly = resolveAnomaly;
+window.createAnalyst = createAnalyst;
+window.updateUserStatus = updateUserStatus;
+window.updateMyProfile = updateMyProfile;
+window.deleteUser = deleteUser;
+window.logoutUser = logoutUser;
 
 // Recommandation IA pour une anomalie
 async function generateRecommendation(anomalyId) {
