@@ -15,6 +15,9 @@
     .controls input, .controls select{padding:8px 10px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
     .btn{background:var(--accent);color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer}
     .btn.secondary{background:#e6eef6;color:var(--accent)}
+    .resolve-btn{background:#10b981;color:#fff;padding:8px 12px;border-radius:8px;border:none;cursor:pointer;transition:filter .2s ease}
+    .resolve-btn:hover{filter:brightness(0.95)}
+    .resolve-btn:disabled{opacity:.6;cursor:not-allowed}
     table{width:100%;border-collapse:collapse;margin-top:12px}
     thead th{text-align:left;padding:14px 8px;color:var(--muted);font-weight:600;font-size:13px;border-bottom:1px solid #eef2f6}
     tbody td{padding:16px 8px;border-bottom:1px solid #f3f6f8;vertical-align:middle}
@@ -68,6 +71,7 @@
               <th class="right">Z-score</th>
               <th>Sévérité</th>
               <th>Statut</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody id="anomaliesBody">
@@ -129,7 +133,7 @@
       const status = document.getElementById('statusSelect').value || '';
       const body = document.getElementById('anomaliesBody');
       const empty = document.getElementById('emptyMsg');
-      body.innerHTML = '<tr><td colspan="8" style="padding:20px"><span class="loader"></span> Chargement...</td></tr>';
+      body.innerHTML = '<tr><td colspan="9" style="padding:20px"><span class="loader"></span> Chargement...</td></tr>';
       empty.style.display = 'none';
       try{
         const anomalies = (await window.getAnomalies(status || null) || []).map(normalizeAnomaly);
@@ -140,7 +144,7 @@
         renderAnomaliesList(anomalies);
       }catch(err){
         console.error(err);
-        body.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444">Erreur lors du chargement des anomalies</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" style="padding:20px;color:#ef4444">Erreur lors du chargement des anomalies</td></tr>`;
       }
     }
 
@@ -172,10 +176,26 @@
           <td class="right muted">${a.z_score ?? ''}</td>
           <td><span class="badge ${sevClass(a.severity)}">${a.severity || 'info'}</span></td>
           <td><span class="badge ${stClass}">${stText}</span></td>
+          <td>${a.status === 'RESOLU' ? '<span class="small muted">Résolue</span>' : `<button class="resolve-btn" data-id="${a.id}">Résoudre</button>`}</td>
         `;
         frag.appendChild(tr);
       });
       body.appendChild(frag);
+
+      body.querySelectorAll('.resolve-btn').forEach((button) => {
+        button.addEventListener('click', async (event) => {
+          const anomalyId = event.currentTarget.dataset.id;
+          event.currentTarget.disabled = true;
+          try {
+            await window.resolveAnomaly(anomalyId);
+            await loadAndRender();
+          } catch (err) {
+            alert(err.message || 'Impossible de résoudre l\'anomalie.');
+          } finally {
+            event.currentTarget.disabled = false;
+          }
+        });
+      });
     }
 
     window.renderAnomaliesList = renderAnomaliesList;
