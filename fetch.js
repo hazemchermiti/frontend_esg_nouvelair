@@ -369,7 +369,11 @@ function renderEvolutionChart(evoData) {
                     data: series.global, // On pioche dans series
                     borderColor: '#1e3a5f',
                     borderWidth: 3,
-                    tension: 0.4,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderWidth: 2,
                     fill: false
                 },
                 {
@@ -377,7 +381,11 @@ function renderEvolutionChart(evoData) {
                     data: series.E, // On pioche dans series
                     borderColor: '#2ecc71',
                     borderWidth: 2,
-                    tension: 0.4,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderWidth: 2,
                     fill: false
                 },
                 {
@@ -385,7 +393,11 @@ function renderEvolutionChart(evoData) {
                     data: series.S, // On pioche dans series
                     borderColor: '#3b82f6',
                     borderWidth: 2,
-                    tension: 0.4,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderWidth: 2,
                     fill: false
                 },
                 {
@@ -393,29 +405,61 @@ function renderEvolutionChart(evoData) {
                     data: series.G, // On pioche dans series
                     borderColor: '#f97316',
                     borderWidth: 2,
-                    tension: 0.4,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderWidth: 2,
                     fill: false
                 }
             ]
         },
         options: {
-            
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100, // Scores sur 100
-                    ticks: { color: '#9ca3af' },
-                    grid: { color: '#f3f4f6', borderDash: [5, 5] }
+                    suggestedMin: 0,
+                    suggestedMax: 100,
+                    ticks: {
+                        color: '#6b7280',
+                        stepSize: 10,
+                        callback: (value) => `${value}`
+                    },
+                    grid: { color: '#e5e7eb', borderDash: [6, 6] }
                 },
                 x: {
-                    ticks: { color: '#9ca3af' },
+                    ticks: { color: '#6b7280' },
                     grid: { display: false }
                 }
             },
             plugins: {
-                legend: { position: 'bottom' }
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#1f2937',
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    enabled: true,
+                    backgroundColor: '#0f172a',
+                    titleColor: '#e2e8f0',
+                    bodyColor: '#f8fafc',
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            const value = Number(context.raw ?? 0);
+                            return `${context.dataset.label}: ${value.toFixed(1)}`;
+                        }
+                    }
+                }
             }
         }
     });
@@ -505,6 +549,82 @@ async function resolveAnomaly(anomalyId) {
     }
 }
 
+// --- Environnement KPI API helpers ---
+async function getMonthlyCo2Score(year = null) {
+    try {
+        const url = new URL(`${API_BASE_URL}/api/kpi/co2/monthly-score`);
+        if (year) url.searchParams.set('year', String(year));
+        let res = await fetch(url.toString(), { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            // retry with trailing slash
+            res = await fetch(url.toString() + '/', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getMonthlyCo2Score error:', error);
+        throw error;
+    }
+}
+
+async function getCo2ByRoute() {
+    try {
+        let res = await fetch(`${API_BASE_URL}/api/kpi/co2/by-route`, { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(`${API_BASE_URL}/api/kpi/co2/by-route/`, { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getCo2ByRoute error:', error);
+        throw error;
+    }
+}
+
+async function getMonthlyFuelSurchargeScore(year = null) {
+    try {
+        const url = new URL(`${API_BASE_URL}/api/kpi/fuel-surcharge/monthly-score`);
+        if (year) url.searchParams.set('year', String(year));
+        let res = await fetch(url.toString(), { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(url.toString() + '/', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getMonthlyFuelSurchargeScore error:', error);
+        throw error;
+    }
+}
+
+async function getMonthlyRecyclingRate(year = null) {
+    try {
+        const url = new URL(`${API_BASE_URL}/api/kpi/waste-management/recycling-rate`);
+        if (year) url.searchParams.set('year', String(year));
+        let res = await fetch(url.toString(), { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(url.toString() + '/', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getMonthlyRecyclingRate error:', error);
+        throw error;
+    }
+}
+
 // Expose to global scope for pages that include fetch.js
 window.getAnomalies = getAnomalies;
 window.detectAnomalies = detectAnomalies;
@@ -536,3 +656,8 @@ async function generateRecommendation(anomalyId) {
     }
 }
 window.generateRecommendation = generateRecommendation;
+// Expose environnement KPI helpers
+window.getMonthlyCo2Score = getMonthlyCo2Score;
+window.getCo2ByRoute = getCo2ByRoute;
+window.getMonthlyFuelSurchargeScore = getMonthlyFuelSurchargeScore;
+window.getMonthlyRecyclingRate = getMonthlyRecyclingRate;

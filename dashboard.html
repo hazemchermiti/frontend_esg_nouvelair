@@ -237,6 +237,37 @@ body {
             font-size: 14px;
         }
 
+        .evolution-container {
+            max-width: 100%;
+            margin: 30px auto 0;
+            padding: 0 8px 24px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 16px;
+            padding: 28px 28px 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .chart-title {
+            color: #1a2b4a;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        .chart-wrapper {
+            height: 520px; /* Hauteur de la courbe */
+            width: 100%;
+            position: relative;
+            min-width: 0;
+        }
+
         @media (max-width: 768px) {
             .dashboard-header {
                 flex-direction: column;
@@ -262,30 +293,20 @@ body {
                 font-size: 24px;
             }
             .evolution-container {
-    max-width: 1400px;
-    margin: 30px auto;
-    padding: 0 20px;
-}
+                padding: 0 8px 20px;
+            }
 
-.chart-card {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
+            .chart-card {
+                padding: 18px 18px 14px;
+            }
 
-.chart-title {
-    color: #1a2b4a;
-    font-size: 18px;
-    font-weight: 600;
-    margin-bottom: 25px;
-}
+            .chart-title {
+                font-size: 18px;
+            }
 
-.chart-wrapper {
-    height: 400px; /* Hauteur de la courbe */
-    width: 100%;
-    position: relative;
-}
+            .chart-wrapper {
+                height: 420px; /* Hauteur de la courbe sur mobile */
+            }
         }
     </style>
 </head>

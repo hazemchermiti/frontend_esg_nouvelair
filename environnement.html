@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Environnement - KPIs</title>
+    <style>
+        body { background:#07080a; color:#e6eef6; font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; }
+        .main-content { flex:1; min-width:0; padding:24px; }
+        .env-page { display:flex; flex-direction:column; gap:18px; }
+        .page-header { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+        .page-header h1 { margin:0; font-size:clamp(28px, 3vw, 40px); line-height:1.05; font-weight:800; color:#ffffff; letter-spacing:-0.03em; }
+        .page-header .subtitle { margin:0; color:#94a3b8; font-size:13px; }
+        .grid { display:grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap:20px; align-items:start; width:100%; }
+        .card { min-width:0; background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.03); border-radius:12px; padding:16px; box-shadow: 0 6px 20px rgba(2,6,23,0.6); }
+        .card h2 { margin:0 0 10px 0; font-size:16px; color:#f8fafc; display:block }
+        .card label { font-weight:600 }
+        .card .meta { font-size:12px; color:#98a7b6 }
+        canvas { width:100% !important; height:320px !important; border-radius:8px; }
+        .full { grid-column: 1 / -1; }
+        .center-chart { display:flex; justify-content:center; align-items:stretch; }
+        .center-chart canvas { width:100% !important; height:320px !important; }
+        .compact-card canvas { height:320px !important; }
+
+        @media (max-width: 1100px) {
+            .grid { grid-template-columns: 1fr; }
+            .full { grid-column: auto; }
+            .center-chart canvas { width:100% !important; max-width:none; }
+        }
+    </style>
+</head>
+<body>
+    <main class="main-content env-page">
+        <header class="page-header">
+            <div>
+                <h1>Environnement - KPIs</h1>
+                <p class="subtitle">Vue de suivi des indicateurs environnementaux, alignée avec la sidebar.</p>
+            </div>
+        </header>
+
+        <div class="grid">
+            <div class="card">
+                <h2>1) Score KPI CO2 (mensuel)
+                    <label style="float:right; font-size:12px; color:#9ca3af">Année: <input id="co2Year" type="number" min="2000" max="2100" value="2026" style="width:84px; background:#0f1724; border:1px solid #2b3440; color:#e5e7eb; padding:2px 6px; border-radius:4px"></label>
+                </h2>
+                <canvas id="co2ScoreChart"></canvas>
+            </div>
+
+            <div class="card">
+                <h2>2) Consommation CO2 par Route (tonnes)</h2>
+                <canvas id="co2ByRouteChart"></canvas>
+            </div>
+
+            <div class="card">
+                <h2>3) Fuel Surcharge - Score (mensuel)
+                    <label style="float:right; font-size:12px; color:#9ca3af">Année: <input id="fuelYear" type="number" min="2000" max="2100" value="2026" style="width:84px; background:#0f1724; border:1px solid #2b3440; color:#e5e7eb; padding:2px 6px; border-radius:4px"></label>
+                </h2>
+                <canvas id="fuelSurchargeChart"></canvas>
+            </div>
+
+            <div class="card compact-card">
+                <h2>4) Taux de Recyclage (%)
+                    <label style="float:right; font-size:12px; color:#9ca3af">Année: <input id="recycleYear" type="number" min="2000" max="2100" value="2026" style="width:84px; background:#0f1724; border:1px solid #2b3440; color:#e5e7eb; padding:2px 6px; border-radius:4px"></label>
+                </h2>
+                <canvas id="recyclingRateChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="fetch.js"></script>
+    <script>
+        // Labels mois en français courts
+        const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+
+        function monthIndexFromYyyyMm(yyyyMm) {
+            try {
+                const parts = String(yyyyMm).split('-');
+                if (parts.length >= 2) return Number(parts[1]) - 1;
+            } catch{}
+            return null;
+        }
+
+        function buildMonthlyArrayFromResponse(monthlyScores) {
+            const arr = new Array(12).fill(null);
+            if (!Array.isArray(monthlyScores)) return arr;
+            monthlyScores.forEach(item => {
+                const idx = monthIndexFromYyyyMm(item.month || item.label || item.mois);
+                if (idx !== null && idx >=0 && idx < 12) {
+                    // prefer explicit `score` then specific fields
+                    if (typeof item.score !== 'undefined') arr[idx] = item.score;
+                    else if (typeof item.recycling_rate !== 'undefined') arr[idx] = item.recycling_rate;
+                    else if (typeof item.total_amount_tnd !== 'undefined') arr[idx] = item.total_amount_tnd;
+                    else if (typeof item.total_co2_kg !== 'undefined') arr[idx] = item.total_co2_kg;
+                    else arr[idx] = null;
+                }
+            });
+            return arr;
+        }
+
+        function createDashedGridOptions(yMax=null, ySuffix=''){
+            return {
+                responsive:true,
+                maintainAspectRatio:false,
+                scales: {
+                    x: { ticks: { color: '#9ca3af' }, grid: { display:false } },
+                    y: { beginAtZero:true, ticks: { color:'#9ca3af', callback: function(v){ return v + ySuffix } }, grid: { color:'#374151', borderDash:[6,6] }, suggestedMax: yMax }
+                },
+                plugins: { legend: { position:'bottom', labels:{color:'#cbd5e1'} } }
+            };
+        }
+
+        let co2ScoreChartObj = null;
+        let fuelChartObj = null;
+        let recyclingChartObj = null;
+
+        async function renderCo2Score(year){
+            try{
+                const resp = await window.getMonthlyCo2Score(year);
+                // response structure: { monthly_scores: [{month: '2026-04', score: 50.0}, ...] }
+                const arr = buildMonthlyArrayFromResponse(resp?.monthly_scores || []);
+                const ctx = document.getElementById('co2ScoreChart').getContext('2d');
+                if (co2ScoreChartObj) co2ScoreChartObj.destroy();
+                // gradient
+                const grad = ctx.createLinearGradient(0,0,0,300);
+                grad.addColorStop(0, 'rgba(22,163,74,0.28)');
+                grad.addColorStop(1, 'rgba(22,163,74,0.02)');
+                co2ScoreChartObj = new Chart(ctx, { type:'line', data:{ labels:MONTHS, datasets:[{ label: 'Score CO2 (%)', data: arr, borderColor:'#10b981', backgroundColor:grad, tension:0.36, pointRadius:5, pointHoverRadius:8, pointBackgroundColor:'#052e16', pointBorderColor:'#10b981', pointBorderWidth:2, fill:true }] }, options: {
+                    ...createDashedGridOptions(100,'%'),
+                    interaction: { mode:'nearest', intersect:false },
+                    plugins: { tooltip: { enabled:true, backgroundColor:'#0b1220', titleColor:'#cbd5e1', bodyColor:'#a7f3d0', callbacks: { label: ctx => `${ctx.dataset.label || ''}: ${ctx.formattedValue}` } }, legend: { position:'bottom', labels:{color:'#cbd5e1'} } },
+                    elements: { line: { tension:0.36, borderWidth:3 }, point: { hoverRadius:8 } }
+                } });
+            }catch(e){ console.error('co2 score chart error', e); }
+        }
+
+        async function renderCo2ByRoute(){
+            try{
+                const resp = await window.getCo2ByRoute();
+                // response structure: { by_route: [{ route: 'TN-001', co2_tonnes: 500.123 }, ...] }
+                const rows = resp?.by_route || [];
+                const labels = rows.map(r => r.route || r.name);
+                const data = rows.map(r => Number(r.co2_tonnes ?? r.amount ?? 0));
+                const colors = labels.map((_,i)=>`hsl(${(i*60)%360} 60% 40%)`);
+                const ctx = document.getElementById('co2ByRouteChart').getContext('2d');
+                new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label:'CO2 (tonnes)', data, backgroundColor:colors }] }, options: createDashedGridOptions(null,'') });
+            }catch(e){ console.error('co2 by route chart error', e); }
+        }
+
+        async function renderFuelSurcharge(year){
+            try{
+                const resp = await window.getMonthlyFuelSurchargeScore(year);
+                // expected monthly_scores with score or total_amount_tnd
+                const arr = buildMonthlyArrayFromResponse(resp?.monthly_scores || []);
+                const ctx = document.getElementById('fuelSurchargeChart').getContext('2d');
+                if (fuelChartObj) fuelChartObj.destroy();
+                const gradF = ctx.createLinearGradient(0,0,0,300);
+                gradF.addColorStop(0, 'rgba(16,185,129,0.22)');
+                gradF.addColorStop(1, 'rgba(16,185,129,0.02)');
+                fuelChartObj = new Chart(ctx, { type:'line', data:{ labels:MONTHS, datasets:[{ label:'Fuel Surcharge (score)', data: arr, borderColor:'#059669', backgroundColor:gradF, tension:0.32, pointRadius:4, pointHoverRadius:7, fill:true }] }, options: {
+                    ...createDashedGridOptions(null,''), interaction:{mode:'index',intersect:false}, plugins:{ tooltip:{ enabled:true, backgroundColor:'#07121a', titleColor:'#d1fae5', bodyColor:'#bbf7d0', callbacks:{ label: c=> `${c.dataset.label||''}: ${c.formattedValue}` } }, legend:{ position:'bottom', labels:{color:'#cbd5e1'} } }, elements:{ line:{ borderWidth:2 } }
+                } });
+            }catch(e){ console.error('fuel surcharge chart error', e); }
+        }
+
+        async function renderRecyclingRate(year){
+            try{
+                const resp = await window.getMonthlyRecyclingRate(year);
+                const arr = buildMonthlyArrayFromResponse(resp?.monthly_scores || []);
+                const ctx = document.getElementById('recyclingRateChart').getContext('2d');
+                if (recyclingChartObj) recyclingChartObj.destroy();
+                const gradR = ctx.createLinearGradient(0,0,0,300);
+                gradR.addColorStop(0,'rgba(20,184,166,0.24)');
+                gradR.addColorStop(1,'rgba(20,184,166,0.02)');
+                recyclingChartObj = new Chart(ctx, { type:'line', data:{ labels:MONTHS, datasets:[{ label:'Taux de recyclage (%)', data: arr, borderColor:'#0f766e', backgroundColor:gradR, tension:0.28, pointRadius:6, pointHoverRadius:9, pointBackgroundColor:'#052e29', pointBorderColor:'#34d399', pointBorderWidth:2, fill:true }] }, options: {
+                    ...createDashedGridOptions(100,'%'), interaction:{mode:'nearest',intersect:false}, plugins:{ tooltip:{ enabled:true, backgroundColor:'#06131a', titleColor:'#cde8df', bodyColor:'#bbf7d0', callbacks:{ label: c=> `${c.dataset.label||''}: ${c.formattedValue}%` } }, legend:{ position:'bottom', labels:{color:'#cbd5e1'} } }, elements:{ line:{ borderWidth:3 } }
+                } });
+            }catch(e){ console.error('recycling rate chart error', e); }
+        }
+
+        document.addEventListener('DOMContentLoaded', ()=>{
+            // ensure sidebar is initialized for this view
+            try{ if (typeof initSidebar === 'function') initSidebar(); }catch(e){}
+            const params = new URLSearchParams(window.location.search);
+            const defaultYear = params.get('year') || new Date().getFullYear();
+            // set inputs
+            const co2Input = document.getElementById('co2Year');
+            const fuelInput = document.getElementById('fuelYear');
+            const recycleInput = document.getElementById('recycleYear');
+            if (co2Input) co2Input.value = defaultYear;
+            if (fuelInput) fuelInput.value = defaultYear;
+            if (recycleInput) recycleInput.value = defaultYear;
+
+            // initial render
+            renderCo2Score(defaultYear);
+            renderCo2ByRoute(); // ne pas toucher, comme demandé
+            renderFuelSurcharge(defaultYear);
+            renderRecyclingRate(defaultYear);
+
+            // listeners
+            if (co2Input) co2Input.addEventListener('change', (e)=> renderCo2Score(e.target.value || defaultYear));
+            if (fuelInput) fuelInput.addEventListener('change', (e)=> renderFuelSurcharge(e.target.value || defaultYear));
+            if (recycleInput) recycleInput.addEventListener('change', (e)=> renderRecyclingRate(e.target.value || defaultYear));
+        });
+    </script>
+</body>
+</html>
