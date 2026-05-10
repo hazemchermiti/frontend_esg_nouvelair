@@ -43,12 +43,7 @@ const SIDEBAR_HTML = `
                     <span class="nav-text">Recommandations</span>
                 </a>
             </li>
-            <li>
-                <a href="#" class="nav-item" data-page="rapports">
-                    <span class="nav-icon">📄</span>
-                    <span class="nav-text">Rapports</span>
-                </a>
-            </li>
+            <!-- Rapports link removed -->
             <li>
                 <a href="#" class="nav-item" data-page="parametres">
                     <span class="nav-icon">⚙️</span>
@@ -200,7 +195,6 @@ const PAGE_ROUTES = {
     gouvernance: 'gouvernance.html',
     anomalies: 'anomalies.html',
     recommandations: 'recommandations.html',
-    rapports: 'rapports.html',
     parametres: 'parametres.html',
 };
 
@@ -310,8 +304,6 @@ function setActiveNavItem() {
 
     if (currentPage.includes('parametres')) {
         activePage = 'parametres';
-    } else if (currentPage.includes('rapports')) {
-        activePage = 'rapports';
     } else if (currentPage.includes('recommandations')) {
         activePage = 'recommandations';
     } else if (currentPage.includes('anomalies')) {

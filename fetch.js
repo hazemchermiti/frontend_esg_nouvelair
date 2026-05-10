@@ -625,6 +625,64 @@ async function getMonthlyRecyclingRate(year = null) {
     }
 }
 
+// --- Gouvernance API helpers ---
+async function getPaymentTracking(year = null) {
+    try {
+        const url = new URL(`${API_BASE_URL}/api/payment-tracking/traceable`);
+        if (year) url.searchParams.set('year', String(year));
+        let res = await fetch(url.toString(), { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(url.toString() + '/', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getPaymentTracking error:', error);
+        throw error;
+    }
+}
+
+async function getTaxObligationsByPeriodAndType(year = null) {
+    try {
+        const url = new URL(`${API_BASE_URL}/api/tax-obligations/by-period-and-type`);
+        if (year) url.searchParams.set('year', String(year));
+        let res = await fetch(url.toString(), { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(url.toString() + '/', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getTaxObligationsByPeriodAndType error:', error);
+        throw error;
+    }
+}
+
+async function getAviationLicensesByPeriodAndType(year = null) {
+    try {
+        const url = new URL(`${API_BASE_URL}/api/aviation-licenses/by-period-and-type`);
+        if (year) url.searchParams.set('year', String(year));
+        let res = await fetch(url.toString(), { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        if (res.status === 404 || res.status === 405) {
+            res = await fetch(url.toString() + '/', { method: 'GET', mode: 'cors', headers: { 'Accept': 'application/json' } });
+        }
+        if (!res.ok) {
+            const err = await res.json().catch(() => null);
+            throw new Error(err?.detail || `HTTP ${res.status}`);
+        }
+        return await res.json();
+    } catch (error) {
+        console.error('getAviationLicensesByPeriodAndType error:', error);
+        throw error;
+    }
+}
+
 // Expose to global scope for pages that include fetch.js
 window.getAnomalies = getAnomalies;
 window.detectAnomalies = detectAnomalies;
@@ -661,3 +719,7 @@ window.getMonthlyCo2Score = getMonthlyCo2Score;
 window.getCo2ByRoute = getCo2ByRoute;
 window.getMonthlyFuelSurchargeScore = getMonthlyFuelSurchargeScore;
 window.getMonthlyRecyclingRate = getMonthlyRecyclingRate;
+// Expose gouvernance helpers
+window.getPaymentTracking = getPaymentTracking;
+window.getTaxObligationsByPeriodAndType = getTaxObligationsByPeriodAndType;
+window.getAviationLicensesByPeriodAndType = getAviationLicensesByPeriodAndType;

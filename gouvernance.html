@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Gouvernance - KPIs</title>
+    <style>
+        :root {
+            --bg: #07080a;
+            --panel: rgba(255,255,255,0.03);
+            --panel-border: rgba(255,255,255,0.04);
+            --text: #e6eef6;
+            --muted: #94a3b8;
+            --line: #374151;
+            --accent: #5b8def;
+            --shadow: 0 10px 28px rgba(2, 6, 23, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(91,141,239,0.14), transparent 26%),
+                radial-gradient(circle at top right, rgba(52,211,153,0.10), transparent 22%),
+                var(--bg);
+            color: var(--text);
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 24px;
+        }
+
+        .social-page {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: clamp(28px, 3vw, 40px);
+            line-height: 1.05;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.03em;
+        }
+
+        .page-header .subtitle {
+            margin: 8px 0 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            max-width: 760px;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            width: 100%;
+        }
+
+        .toolbar-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .toolbar-card .label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .toolbar-card select,
+        .toolbar-card input {
+            width: 100%;
+            background: #0f1724;
+            border: 1px solid #2b3440;
+            color: #e5e7eb;
+            padding: 8px 10px;
+            border-radius: 8px;
+            outline: none;
+            font: inherit;
+        }
+
+        .toolbar-card select:focus,
+        .toolbar-card input:focus {
+            border-color: rgba(91,141,239,0.8);
+            box-shadow: 0 0 0 3px rgba(91,141,239,0.16);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            align-items: start;
+            width: 100%;
+        }
+
+        .card {
+            min-width: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.012));
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-wide {
+            grid-column: 1 / -1;
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 16px;
+            color: #f8fafc;
+            line-height: 1.25;
+        }
+
+        .card .meta {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .inline-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .inline-controls label {
+            font-size: 12px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inline-controls select,
+        .inline-controls input {
+            background: #0f1724;
+            border: 1px solid #2b3440;
+            color: #e5e7eb;
+            padding: 6px 8px;
+            border-radius: 6px;
+            outline: none;
+            font: inherit;
+        }
+
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 340px;
+        }
+
+        .chart-wrap.tall {
+            height: 360px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 10px;
+        }
+
+        .error-box {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #fca5a5;
+            min-height: 16px;
+        }
+
+        @media (max-width: 1100px) {
+            .toolbar,
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-wide {
+                grid-column: auto;
+            }
+
+            .chart-wrap,
+            .chart-wrap.tall {
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="main-content social-page">
+        <header class="page-header">
+            <div>
+                <h1>Gouvernance - Dashboard</h1>
+                <p class="subtitle">Trois courbes: Suivi des paiements, Obligations fiscales, Licences d'aviation (actives & pendantes). Axe Y en %.</p>
+            </div>
+            <div></div>
+        </header>
+
+        <!-- toolbar removed as requested -->
+
+        <section class="grid">
+            <article class="card card-wide">
+                <div class="card-head">
+                    <div>
+                        <h2>1) Suivi des Paiements par Mode (TND)</h2>
+                        <p class="meta">Axe X = mois, Axe Y = valeur en % (sélectionnez l'année par courbe).</p>
+                    </div>
+                    <div class="inline-controls">
+                        <label>
+                            Année
+                            <input id="paymentsYear" type="number" min="2000" max="2100" value="2026">
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-wrap tall" style="margin-top:12px;">
+                    <canvas id="paymentsChart"></canvas>
+                </div>
+                <div class="error-box" id="paymentsError"></div>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>2) Obligations Fiscales (TND)</h2>
+                        <p class="meta">Axe X = mois, Axe Y = pourcentage. Plusieurs types de taxes.</p>
+                    </div>
+                    <div class="inline-controls">
+                        <label>
+                            Année
+                            <input id="taxYear" type="number" min="2000" max="2100" value="2026">
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-wrap" style="margin-top:12px;">
+                    <canvas id="taxChart"></canvas>
+                </div>
+                <div class="error-box" id="taxError"></div>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>3) Licences d'Aviation (actives & pending)</h2>
+                        <p class="meta">Axe X = mois, Axe Y = pourcentage par type de licence.</p>
+                    </div>
+                    <div class="inline-controls">
+                        <label>
+                            Année
+                            <input id="licensesYear" type="number" min="2000" max="2100" value="2026">
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-wrap" style="margin-top:12px;">
+                    <canvas id="licensesChart"></canvas>
+                </div>
+                <div class="error-box" id="licensesError"></div>
+            </article>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="sidebar.js"></script>
+    <script src="fetch.js"></script>
+    <script>
+        const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc'];
+        const chartState = { payments: null, taxes: null, licenses: null };
+
+        function buildPalette(count, saturation=74, lightness=50) {
+            return Array.from({length: Math.max(1,count)}, (_,i) => `hsl(${Math.round((i*360)/Math.max(1,count))} ${saturation}% ${lightness}%)`);
+        }
+
+        function resolveMonthIndex(value) {
+            if (!value) return null;
+            const m = String(value).trim().match(/^(\d{4})-(\d{1,2})$/);
+            if (m) return Number(m[2]) - 1;
+            const map = {jan:0,fev:1,fév:1,feb:1,mars:2,mar:2,av:3,avr:3,mai:4,jun:5,juin:5,jul:6,juil:6,aou:7,août:7,sep:8,oct:9,nov:10,dec:11,decembre:11,déc:11};
+            const key = String(value).toLowerCase();
+            for (const k in map) if (key.includes(k)) return map[k];
+            return null;
+        }
+
+        function normalizeToMonthlyMap(periods) {
+            const seriesMap = {};
+            (periods||[]).forEach(p => {
+                const idx = resolveMonthIndex(p.period);
+                if (idx === null) return;
+                const groups = p.payments_by_mode || p.taxes_by_type || p.licenses_by_type || [];
+                groups.forEach(g => {
+                    const key = (g.payment_mode || g.tax_type || g.license_type || 'unknown');
+                    const value = Number(g.total_amount ?? g.total_cost ?? g.total_amount ?? 0);
+                    if (!seriesMap[key]) seriesMap[key] = new Array(12).fill(null);
+                    seriesMap[key][idx] = value;
+                });
+            });
+            return seriesMap;
+        }
+
+        function destroyChart(key) { if (chartState[key]) { chartState[key].destroy(); chartState[key] = null; } }
+
+        async function renderPayments(year) {
+            document.getElementById('paymentsError').textContent = '';
+            try {
+                const res = await window.getPaymentTracking(year);
+                const periods = res?.periods || [];
+                const map = normalizeToMonthlyMap(periods);
+                const keys = Object.keys(map);
+                const palette = buildPalette(keys.length || 1, 72, 56);
+
+                const datasets = keys.map((k,i) => ({
+                    label: k,
+                    data: map[k],
+                    borderColor: palette[i],
+                    backgroundColor: palette[i],
+                    tension: 0.32,
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    spanGaps: true,
+                    fill: false
+                }));
+
+                destroyChart('payments');
+                const ctx = document.getElementById('paymentsChart').getContext('2d');
+                chartState.payments = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: MONTHS, datasets },
+                    options: {
+                        responsive:true, maintainAspectRatio:false,
+                        interaction:{mode:'nearest',intersect:false},
+                        scales: { x:{ grid:{display:false}, ticks:{color:'#9ca3af'} }, y:{ beginAtZero:true, suggestedMax:100, ticks:{callback:v=>`${v}%`, color:'#9ca3af'}, grid:{color:'#374151', borderDash:[6,6]} } },
+                        plugins:{ legend:{ position:'bottom', labels:{color:'#cbd5e1'} }, tooltip:{ backgroundColor:'#0b1220', titleColor:'#e2e8f0', bodyColor:'#f8fafc', callbacks:{ label: (ctx)=> `${ctx.dataset.label}: ${ctx.formattedValue}%` } } }
+                    }
+                });
+            } catch (e) {
+                console.error(e); document.getElementById('paymentsError').textContent = e.message || 'Erreur';
+            }
+        }
+
+        async function renderTaxes(year) {
+            document.getElementById('taxError').textContent = '';
+            try {
+                const res = await window.getTaxObligationsByPeriodAndType(year);
+                const periods = res?.periods || [];
+                const map = normalizeToMonthlyMap(periods);
+                const keys = Object.keys(map);
+                const palette = buildPalette(keys.length || 1, 68, 46);
+
+                const datasets = keys.map((k,i) => ({
+                    label: k,
+                    data: map[k],
+                    borderColor: palette[i],
+                    backgroundColor: palette[i],
+                    tension: 0.28,
+                    borderWidth: 2,
+                    pointRadius: 3,
+                    fill: false,
+                    spanGaps: true
+                }));
+
+                destroyChart('taxes');
+                const ctx = document.getElementById('taxChart').getContext('2d');
+                chartState.taxes = new Chart(ctx, { type: 'line', data: { labels: MONTHS, datasets }, options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{display:false}, ticks:{color:'#9ca3af'} }, y:{ beginAtZero:true, suggestedMax:100, ticks:{ callback:v=>`${v}%`, color:'#9ca3af' }, grid:{ color:'#374151', borderDash:[6,6] } } }, plugins:{ legend:{ position:'bottom', labels:{color:'#cbd5e1'} }, tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.formattedValue}%` }, backgroundColor:'#0b1220', titleColor:'#e2e8f0', bodyColor:'#f8fafc' } } } });
+            } catch (e) {
+                console.error(e); document.getElementById('taxError').textContent = e.message || 'Erreur';
+            }
+        }
+
+        async function renderLicenses(year) {
+            document.getElementById('licensesError').textContent = '';
+            try {
+                const res = await window.getAviationLicensesByPeriodAndType(year);
+                const periods = res?.periods || [];
+                const map = normalizeToMonthlyMap(periods);
+                const keys = Object.keys(map);
+                const palette = buildPalette(keys.length || 1, 74, 44);
+
+                const datasets = keys.map((k,i) => ({
+                    label: k,
+                    data: map[k],
+                    borderColor: palette[i],
+                    backgroundColor: palette[i],
+                    tension: 0.3,
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    fill: false,
+                    spanGaps: true
+                }));
+
+                destroyChart('licenses');
+                const ctx = document.getElementById('licensesChart').getContext('2d');
+                chartState.licenses = new Chart(ctx, { type: 'line', data: { labels: MONTHS, datasets }, options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ grid:{display:false}, ticks:{color:'#9ca3af'} }, y:{ beginAtZero:true, suggestedMax:100, ticks:{ callback:v=>`${v}%`, color:'#9ca3af' }, grid:{ color:'#374151', borderDash:[6,6] } } }, plugins:{ legend:{ position:'bottom', labels:{color:'#cbd5e1'} }, tooltip:{ callbacks:{ label:(ctx)=>`${ctx.dataset.label}: ${ctx.formattedValue}%` }, backgroundColor:'#0b1220', titleColor:'#e2e8f0', bodyColor:'#f8fafc' } } } });
+            } catch (e) {
+                console.error(e); document.getElementById('licensesError').textContent = e.message || 'Erreur';
+            }
+        }
+
+        function bind() {
+            const paymentsYear = document.getElementById('paymentsYear');
+            const taxYear = document.getElementById('taxYear');
+            const licensesYear = document.getElementById('licensesYear');
+            paymentsYear.addEventListener('change', () => renderPayments(Number(paymentsYear.value || new Date().getFullYear())));
+            taxYear.addEventListener('change', () => renderTaxes(Number(taxYear.value || new Date().getFullYear())));
+            licensesYear.addEventListener('change', () => renderLicenses(Number(licensesYear.value || new Date().getFullYear())));
+        }
+
+        function renderAllFromInputs() {
+            const paymentsYear = Number(document.getElementById('paymentsYear').value || new Date().getFullYear());
+            const taxYear = Number(document.getElementById('taxYear').value || new Date().getFullYear());
+            const licensesYear = Number(document.getElementById('licensesYear').value || new Date().getFullYear());
+            renderPayments(paymentsYear);
+            renderTaxes(taxYear);
+            renderLicenses(licensesYear);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            try { if (typeof initSidebar === 'function') initSidebar(); } catch(e){}
+            const params = new URLSearchParams(window.location.search);
+            const defaultYear = params.get('year') || new Date().getFullYear();
+            document.getElementById('paymentsYear').value = params.get('payments_year') || defaultYear;
+            document.getElementById('taxYear').value = params.get('tax_year') || defaultYear;
+            document.getElementById('licensesYear').value = params.get('licenses_year') || defaultYear;
+
+            bind();
+            renderAllFromInputs();
+        });
+    </script>
+</body>
+</html>

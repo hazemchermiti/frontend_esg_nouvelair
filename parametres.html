@@ -71,7 +71,7 @@
       <div class="page-header">
         <div class="page-title">
           <h1>Paramètres utilisateurs</h1>
-          <p>Consultez la liste des utilisateurs et gérez les analystes depuis cet écran.</p>
+          <p id="commentaire">Consultez la liste des utilisateurs et gérez les analystes depuis cet écran.</p>
         </div>
         <div class="profile-box">
           <div class="avatar" id="profileAvatar">AB</div>
@@ -437,6 +437,13 @@
 
     if (currentUser.role !== 'ADMIN') {
       createAnalystBtn.style.display = 'none';
+    }
+
+    if (currentUser.role === 'ANALYST') {
+      document.getElementById('userCount').style.display = 'none';
+      document.querySelector('.search-bar').style.display = 'none';
+      document.querySelector('.card').style.display = 'none';
+      document.querySelector('#commentaire').style.display = 'none';
     }
 
     updateProfileHeader(currentUser);
