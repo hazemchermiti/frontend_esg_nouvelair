@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Social - KPIs</title>
+    <style>
+        :root {
+            --bg: #07080a;
+            --panel: rgba(255,255,255,0.03);
+            --panel-border: rgba(255,255,255,0.04);
+            --text: #e6eef6;
+            --muted: #94a3b8;
+            --line: #374151;
+            --accent: #5b8def;
+            --shadow: 0 10px 28px rgba(2, 6, 23, 0.6);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background:
+                radial-gradient(circle at top left, rgba(91,141,239,0.14), transparent 26%),
+                radial-gradient(circle at top right, rgba(52,211,153,0.10), transparent 22%),
+                var(--bg);
+            color: var(--text);
+            font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            min-width: 0;
+            padding: 24px;
+        }
+
+        .social-page {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .page-header {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .page-header h1 {
+            margin: 0;
+            font-size: clamp(28px, 3vw, 40px);
+            line-height: 1.05;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.03em;
+        }
+
+        .page-header .subtitle {
+            margin: 8px 0 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            max-width: 760px;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+            width: 100%;
+        }
+
+        .toolbar-card {
+            background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015));
+            border: 1px solid var(--panel-border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .toolbar-card .label {
+            display: block;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .toolbar-card select,
+        .toolbar-card input {
+            width: 100%;
+            background: #0f1724;
+            border: 1px solid #2b3440;
+            color: #e5e7eb;
+            padding: 8px 10px;
+            border-radius: 8px;
+            outline: none;
+            font: inherit;
+        }
+
+        .toolbar-card select:focus,
+        .toolbar-card input:focus {
+            border-color: rgba(91,141,239,0.8);
+            box-shadow: 0 0 0 3px rgba(91,141,239,0.16);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+            align-items: start;
+            width: 100%;
+        }
+
+        .card {
+            min-width: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0.012));
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-wide {
+            grid-column: 1 / -1;
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .card h2 {
+            margin: 0;
+            font-size: 16px;
+            color: #f8fafc;
+            line-height: 1.25;
+        }
+
+        .card .meta {
+            margin: 4px 0 0 0;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .inline-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .inline-controls label {
+            font-size: 12px;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .inline-controls select,
+        .inline-controls input {
+            background: #0f1724;
+            border: 1px solid #2b3440;
+            color: #e5e7eb;
+            padding: 6px 8px;
+            border-radius: 6px;
+            outline: none;
+            font: inherit;
+        }
+
+        .chart-wrap {
+            position: relative;
+            width: 100%;
+            height: 340px;
+        }
+
+        .chart-wrap.tall {
+            height: 360px;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 10px;
+        }
+
+        .error-box {
+            margin-top: 8px;
+            font-size: 12px;
+            color: #fca5a5;
+            min-height: 16px;
+        }
+
+        @media (max-width: 1100px) {
+            .toolbar,
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-wide {
+                grid-column: auto;
+            }
+
+            .chart-wrap,
+            .chart-wrap.tall {
+                height: 320px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="main-content social-page">
+        <header class="page-header">
+            <div>
+                <h1>Social - KPIs</h1>
+                <p class="subtitle">Tableau de bord social avec parité H/F, formation trimestrielle et LTIR mensuel, piloté par Chart.js.</p>
+            </div>
+        </header>
+
+        <section class="toolbar">
+            <div class="toolbar-card">
+                <span class="label">Filtre global par statut actif</span>
+                <select id="globalActiveFilter">
+                    <option value="true" selected>Employés actifs seulement</option>
+                    <option value="false">Tous les employés</option>
+                </select>
+            </div>
+            <div class="toolbar-card">
+                <span class="label">Année formation</span>
+                <input id="trainingYearGlobal" type="number" min="2000" max="2100" value="2026">
+            </div>
+            <div class="toolbar-card">
+                <span class="label">Année LTIR</span>
+                <input id="ltirYearGlobal" type="number" min="2000" max="2100" value="2026">
+            </div>
+        </section>
+
+        <section class="grid">
+            <article class="card card-wide">
+                <div class="card-head">
+                    <div>
+                        <h2>1) Parité H/F par département</h2>
+                        <p class="meta">Histogramme multicolore avec axe X = départements et axe Y = pourcentage H/F.</p>
+                    </div>
+                    <div class="inline-controls">
+                        <label>
+                            is_active
+                            <select id="genderActiveFilter">
+                                <option value="true" selected>true</option>
+                                <option value="false">false</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-wrap tall">
+                    <canvas id="genderByDepartmentChart"></canvas>
+                </div>
+                <div class="error-box" id="genderError"></div>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>2) Heures de formation par trimestre</h2>
+                        <p class="meta">Histogramme multicolore, axe X = Q1 à Q4, axe Y = h/emp.</p>
+                    </div>
+                    <div class="inline-controls">
+                        <label>
+                            Année
+                            <input id="trainingYear" type="number" min="2000" max="2100" value="2026">
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="trainingHoursChart"></canvas>
+                </div>
+                <div class="error-box" id="trainingError"></div>
+            </article>
+
+            <article class="card">
+                <div class="card-head">
+                    <div>
+                        <h2>3) LTIR mensuel</h2>
+                        <p class="meta">Courbe mensuelle en ratio avec axe X = mois de l’année et axe Y = LTIR.</p>
+                    </div>
+                    <div class="inline-controls">
+                        <label>
+                            Année
+                            <input id="ltirYear" type="number" min="2000" max="2100" value="2026">
+                        </label>
+                    </div>
+                </div>
+                <div class="chart-wrap">
+                    <canvas id="ltirChart"></canvas>
+                </div>
+                <div class="error-box" id="ltirError"></div>
+            </article>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="sidebar.js"></script>
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+
+        const chartState = {
+            gender: null,
+            training: null,
+            ltir: null,
+        };
+
+        function toNumber(value, fallback = null) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        }
+
+        function hexOrHslToRgba(color, alpha) {
+            if (String(color).startsWith('hsl(')) {
+                return String(color).replace(')', ` / ${alpha})`);
+            }
+            return color;
+        }
+
+        function buildPalette(count, saturation = 74, lightness = 56) {
+            return Array.from({ length: Math.max(1, count) }, (_, index) => {
+                const hue = Math.round((index * 360) / Math.max(1, count));
+                return `hsl(${hue} ${saturation}% ${lightness}%)`;
+            });
+        }
+
+        function resolveMonthIndex(value) {
+            if (value === null || typeof value === 'undefined') return null;
+            const normalized = String(value).trim().toLowerCase();
+            const match = normalized.match(/^(\d{4})-(\d{1,2})$/);
+            if (match) {
+                const monthIndex = Number(match[2]) - 1;
+                return monthIndex >= 0 && monthIndex < 12 ? monthIndex : null;
+            }
+
+            const shortMap = {
+                jan: 0, janvier: 0,
+                feb: 1, fev: 1, fév: 1, fevrier: 1, février: 1,
+                mar: 2, mars: 2,
+                apr: 3, avr: 3, avril: 3,
+                may: 4, mai: 4,
+                jun: 5, juin: 5,
+                jul: 6, juil: 6, juillet: 6,
+                aug: 7, aou: 7, août: 7, aout: 7,
+                sep: 8, sept: 8, septembre: 8,
+                oct: 9, octobre: 9,
+                nov: 10, novembre: 10,
+                dec: 11, decembre: 11, décembre: 11,
+            };
+            if (typeof shortMap[normalized] !== 'undefined') {
+                return shortMap[normalized];
+            }
+            return null;
+        }
+
+        function getJsonOrThrow(url) {
+            return fetch(url, {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+            }).then(async (response) => {
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    throw new Error(errorData?.detail || `HTTP ${response.status}`);
+                }
+                return response.json();
+            });
+        }
+
+        async function fetchGenderStats(activeOnly) {
+            const url = `${API_BASE_URL}/api/employees/gender-stats?active_only=${encodeURIComponent(String(activeOnly))}`;
+            return getJsonOrThrow(url);
+        }
+
+        async function fetchTrainingHours(year) {
+            const url = `${API_BASE_URL}/api/training/hours-per-quarter/${encodeURIComponent(year)}`;
+            return getJsonOrThrow(url);
+        }
+
+        async function fetchLtirLikeData(year) {
+            const url = `${API_BASE_URL}/api/aviation-licenses/by-period-and-type?year=${encodeURIComponent(year)}`;
+            return getJsonOrThrow(url);
+        }
+
+        function commonBarOptions(ySuffix = '') {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { display: false },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: (value) => `${value}${ySuffix}`,
+                        },
+                        grid: {
+                            color: '#374151',
+                            borderDash: [6, 6],
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#cbd5e1' },
+                    },
+                    tooltip: {
+                        backgroundColor: '#0b1220',
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#f8fafc',
+                    },
+                },
+            };
+        }
+
+        function commonLineOptions(ySuffix = '') {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'nearest', intersect: false },
+                scales: {
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { display: false },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            color: '#9ca3af',
+                            callback: (value) => `${value}${ySuffix}`,
+                        },
+                        grid: {
+                            color: '#374151',
+                            borderDash: [6, 6],
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#cbd5e1' },
+                    },
+                    tooltip: {
+                        backgroundColor: '#0b1220',
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#f8fafc',
+                    },
+                },
+            };
+        }
+
+        function setError(targetId, message) {
+            const el = document.getElementById(targetId);
+            if (el) {
+                el.textContent = message || '';
+            }
+        }
+
+        function destroyChart(chartKey) {
+            if (chartState[chartKey]) {
+                chartState[chartKey].destroy();
+                chartState[chartKey] = null;
+            }
+        }
+
+        function extractQuarterRows(response) {
+            const rows = Array.isArray(response?.quarters) ? response.quarters : [];
+            return rows.map((row) => ({
+                label: row.quarter || row.label || row.period || '',
+                value: toNumber(row.total_hours ?? row.hours ?? row.value ?? row.total ?? 0, 0),
+            }));
+        }
+
+        function extractMonthlyRows(response) {
+            if (Array.isArray(response?.months)) {
+                return response.months.map((row) => ({
+                    label: row.month || row.period || row.label || '',
+                    value: toNumber(row.ltir ?? row.ratio ?? row.value ?? row.total ?? row.total_cost ?? 0, 0),
+                }));
+            }
+
+            if (Array.isArray(response?.monthly_scores)) {
+                return response.monthly_scores.map((row) => ({
+                    label: row.month || row.period || row.label || '',
+                    value: toNumber(row.score ?? row.ltir ?? row.ratio ?? row.value ?? 0, 0),
+                }));
+            }
+
+            if (Array.isArray(response?.periods)) {
+                return response.periods.map((row) => ({
+                    label: row.period || row.month || row.label || '',
+                    value: toNumber(row.ltir ?? row.ratio ?? row.value ?? row.total_period ?? row.total_cost ?? 0, 0),
+                }));
+            }
+
+            return [];
+        }
+
+        function normalizeMonthlySeries(rows) {
+            const monthly = new Array(12).fill(null);
+            rows.forEach((row) => {
+                const idx = resolveMonthIndex(row.label);
+                if (idx !== null) {
+                    monthly[idx] = row.value;
+                }
+            });
+            return monthly;
+        }
+
+        async function renderGenderChart() {
+            const activeOnly = document.getElementById('genderActiveFilter')?.value === 'true';
+            setError('genderError', '');
+            try {
+                const response = await fetchGenderStats(activeOnly);
+                const rows = Array.isArray(response?.by_department) ? response.by_department : [];
+                const labels = rows.map((row) => row.department || 'N/A');
+                const palette = buildPalette(labels.length || 1, 72, 58);
+                const femaleData = rows.map((row) => toNumber(row.female_percentage ?? 0, 0));
+                const maleData = rows.map((row) => toNumber(row.male_percentage ?? 0, 0));
+
+                destroyChart('gender');
+                const ctx = document.getElementById('genderByDepartmentChart').getContext('2d');
+                chartState.gender = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label: 'Femmes (%)',
+                                data: femaleData,
+                                backgroundColor: palette.map((color) => hexOrHslToRgba(color, 0.88)),
+                                borderColor: palette,
+                                borderWidth: 1.5,
+                                borderRadius: 8,
+                                barPercentage: 0.82,
+                                categoryPercentage: 0.64,
+                            },
+                            {
+                                label: 'Hommes (%)',
+                                data: maleData,
+                                backgroundColor: palette.map((color) => hexOrHslToRgba(color, 0.42)),
+                                borderColor: palette.map((color) => hexOrHslToRgba(color, 0.92)),
+                                borderWidth: 1.5,
+                                borderRadius: 8,
+                                barPercentage: 0.82,
+                                categoryPercentage: 0.64,
+                            },
+                        ],
+                    },
+                    options: {
+                        ...commonBarOptions('%'),
+                        scales: {
+                            ...commonBarOptions('%').scales,
+                            y: {
+                                ...commonBarOptions('%').scales.y,
+                                max: 100,
+                            },
+                        },
+                        plugins: {
+                            ...commonBarOptions('%').plugins,
+                            tooltip: {
+                                ...commonBarOptions('%').plugins.tooltip,
+                                callbacks: {
+                                    label: (context) => `${context.dataset.label}: ${context.formattedValue}%`,
+                                },
+                            },
+                        },
+                    },
+                });
+            } catch (error) {
+                console.error('gender chart error', error);
+                setError('genderError', error.message || 'Impossible de charger la parité H/F.');
+            }
+        }
+
+        async function renderTrainingChart() {
+            const year = document.getElementById('trainingYear')?.value || new Date().getFullYear();
+            setError('trainingError', '');
+            try {
+                const response = await fetchTrainingHours(year);
+                const rows = extractQuarterRows(response);
+                const labels = rows.map((row) => row.label);
+                const data = rows.map((row) => row.value);
+                const palette = buildPalette(labels.length || 4, 70, 56);
+
+                destroyChart('training');
+                const ctx = document.getElementById('trainingHoursChart').getContext('2d');
+                chartState.training = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels,
+                        datasets: [{
+                            label: 'Heures de formation (h/emp)',
+                            data,
+                            backgroundColor: palette,
+                            borderColor: palette,
+                            borderWidth: 1.2,
+                            borderRadius: 8,
+                        }],
+                    },
+                    options: {
+                        ...commonBarOptions(' h'),
+                        plugins: {
+                            ...commonBarOptions(' h').plugins,
+                            tooltip: {
+                                ...commonBarOptions(' h').plugins.tooltip,
+                                callbacks: {
+                                    label: (context) => `${context.dataset.label}: ${context.formattedValue} h/emp`,
+                                },
+                            },
+                        },
+                    },
+                });
+            } catch (error) {
+                console.error('training chart error', error);
+                setError('trainingError', error.message || 'Impossible de charger les heures de formation.');
+            }
+        }
+
+        async function renderLtirChart() {
+            const year = document.getElementById('ltirYear')?.value || new Date().getFullYear();
+            setError('ltirError', '');
+            try {
+                const response = await fetchLtirLikeData(year);
+                const rows = extractMonthlyRows(response);
+                const monthlySeries = normalizeMonthlySeries(rows);
+                const palette = buildPalette(12, 68, 56);
+
+                destroyChart('ltir');
+                const ctx = document.getElementById('ltirChart').getContext('2d');
+                const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+                gradient.addColorStop(0, 'rgba(91,141,239,0.26)');
+                gradient.addColorStop(1, 'rgba(91,141,239,0.03)');
+
+                chartState.ltir = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: MONTHS,
+                        datasets: [{
+                            label: 'LTIR',
+                            data: monthlySeries,
+                            borderColor: '#5b8def',
+                            backgroundColor: gradient,
+                            tension: 0.34,
+                            borderWidth: 3,
+                            fill: true,
+                            pointRadius: 5,
+                            pointHoverRadius: 8,
+                            pointBackgroundColor: palette,
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                        }],
+                    },
+                    options: {
+                        ...commonLineOptions(''),
+                        plugins: {
+                            ...commonLineOptions('').plugins,
+                            tooltip: {
+                                ...commonLineOptions('').plugins.tooltip,
+                                callbacks: {
+                                    label: (context) => `${context.dataset.label}: ${context.formattedValue}`,
+                                },
+                            },
+                        },
+                    },
+                });
+            } catch (error) {
+                console.error('ltir chart error', error);
+                setError('ltirError', error.message || 'Impossible de charger le LTIR.');
+            }
+        }
+
+        function bindListeners() {
+            const genderFilter = document.getElementById('genderActiveFilter');
+            const globalActiveFilter = document.getElementById('globalActiveFilter');
+            const trainingYear = document.getElementById('trainingYear');
+            const trainingYearGlobal = document.getElementById('trainingYearGlobal');
+            const ltirYear = document.getElementById('ltirYear');
+            const ltirYearGlobal = document.getElementById('ltirYearGlobal');
+
+            if (genderFilter) genderFilter.addEventListener('change', renderGenderChart);
+            if (globalActiveFilter) globalActiveFilter.addEventListener('change', (event) => {
+                if (genderFilter) {
+                    genderFilter.value = event.target.value;
+                }
+                renderGenderChart();
+            });
+
+            if (trainingYear) trainingYear.addEventListener('change', renderTrainingChart);
+            if (trainingYearGlobal) trainingYearGlobal.addEventListener('change', (event) => {
+                if (trainingYear) trainingYear.value = event.target.value;
+                renderTrainingChart();
+            });
+
+            if (ltirYear) ltirYear.addEventListener('change', renderLtirChart);
+            if (ltirYearGlobal) ltirYearGlobal.addEventListener('change', (event) => {
+                if (ltirYear) ltirYear.value = event.target.value;
+                renderLtirChart();
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (typeof initSidebar === 'function') initSidebar();
+            } catch (error) {
+                console.warn('sidebar init failed', error);
+            }
+
+            const params = new URLSearchParams(window.location.search);
+            const defaultYear = params.get('year') || new Date().getFullYear();
+
+            const trainingYear = document.getElementById('trainingYear');
+            const trainingYearGlobal = document.getElementById('trainingYearGlobal');
+            const ltirYear = document.getElementById('ltirYear');
+            const ltirYearGlobal = document.getElementById('ltirYearGlobal');
+
+            if (trainingYear) trainingYear.value = defaultYear;
+            if (trainingYearGlobal) trainingYearGlobal.value = defaultYear;
+            if (ltirYear) ltirYear.value = defaultYear;
+            if (ltirYearGlobal) ltirYearGlobal.value = defaultYear;
+
+            bindListeners();
+            renderGenderChart();
+            renderTrainingChart();
+            renderLtirChart();
+        });
+    </script>
+</body>
+</html>
